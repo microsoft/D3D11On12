@@ -101,7 +101,7 @@ namespace D3D11On12
     HRESULT APIENTRY Adapter::CloseAdapter(_In_ D3D10DDI_HADAPTER hAdapter)
     {
         auto pAdapter = CastFrom(hAdapter);
-        pAdapter->~Adapter();
+        delete pAdapter;
         return S_OK;
     }
 
