@@ -629,7 +629,7 @@ namespace D3D11On12
         {
             buffer.reset();
         }
-        GetBatchedContext().ProcessBatch();
+        GetBatchedContext().Shutdown();
     }
 
     //----------------------------------------------------------------------------------------------------------------------------------
@@ -988,7 +988,7 @@ namespace D3D11On12
 
         // Defer destruction of batches referenced by command lists to ensure that they stay alive
         // even if they're referenced within other command lists.
-        pDevice->GetBatchedContext().AddPostBatchFunction([spBatch = pCommandList->m_CommandList.release(), pDevice]() mutable
+        pDevice->GetBatchedContext().AddDestroyFunction([spBatch = pCommandList->m_CommandList.release(), pDevice]() mutable
         {
             if (spBatch)
             {
