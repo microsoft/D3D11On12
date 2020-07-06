@@ -241,8 +241,27 @@ namespace D3D11On12
             }
         }
 
-        auto spUnderlyingResource = D3D12TranslationLayer::Resource::CreateResource(
-            &pDevice->GetImmediateContextNoFlush(), createArgs, pDevice->GetResourceAllocationContext()); // throw( bad_alloc )
+        auto CreateFunc = [&]()
+        {
+            return D3D12TranslationLayer::Resource::CreateResource(
+                &pDevice->GetImmediateContextNoFlush(), createArgs, pDevice->GetResourceAllocationContext()); // throw( bad_alloc )
+        };
+        auto CreateAndRetry = [&]()
+        {
+            try
+            {
+                return CreateFunc();
+            }
+            catch (_com_error&)
+            {
+                if (pDevice->GetBatchedContext().ProcessBatch())
+                {
+                    return CreateFunc();
+                }
+                throw;
+            }
+        };
+        auto spUnderlyingResource = CreateAndRetry();
 
         // Check if we're supposed to be creating a shared resource
         {
