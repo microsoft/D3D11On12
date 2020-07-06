@@ -20,19 +20,25 @@ namespace D3D11On12
                 std::lock_guard lock(s_this.m_lock);
                 if (s_this.m_bTriedLoad)
                 {
-                    return E_NOTIMPL;
+                    if (pfnDxcCreateInstance == &DxcCreateInstance)
+                    {
+                        return E_NOTIMPL;
+                    }
                 }
-                s_this.m_bTriedLoad = true;
-                s_this.m_hDxilConv = LoadLibraryW(L"dxilconv.dll");
-                if (!s_this.m_hDxilConv)
+                else
                 {
-                    return HRESULT_FROM_WIN32(GetLastError());
-                }
-                pfnDxcCreateInstance = reinterpret_cast<decltype(&::DxcCreateInstance)>(GetProcAddress(s_this.m_hDxilConv, "DxcCreateInstance"));
-                if (!pfnDxcCreateInstance)
-                {
-                    pfnDxcCreateInstance = &DxcCreateInstance;
-                    return HRESULT_FROM_WIN32(GetLastError());
+                    s_this.m_bTriedLoad = true;
+                    s_this.m_hDxilConv = LoadLibraryW(L"dxilconv.dll");
+                    if (!s_this.m_hDxilConv)
+                    {
+                        return HRESULT_FROM_WIN32(GetLastError());
+                    }
+                    pfnDxcCreateInstance = reinterpret_cast<decltype(&::DxcCreateInstance)>(GetProcAddress(s_this.m_hDxilConv, "DxcCreateInstance"));
+                    if (!pfnDxcCreateInstance)
+                    {
+                        pfnDxcCreateInstance = &DxcCreateInstance;
+                        return HRESULT_FROM_WIN32(GetLastError());
+                    }
                 }
             }
             return pfnDxcCreateInstance(rclsid, riid, ppv);
