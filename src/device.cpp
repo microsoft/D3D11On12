@@ -1130,8 +1130,30 @@ namespace D3D11On12
     STDMETHODIMP Device::AddResourceWaitsToQueue(_In_ ID3D11On12DDIResource* p11on12DDIResource, _In_ ID3D12CommandQueue* pCommmandQueue) noexcept 
     {
         auto* pResource = static_cast<Resource*>(p11on12DDIResource)->ImmediateResource();
+        D3DX12Residency::ManagedObject* pResidencyHandle = pResource->GetResidencyHandle();
 
         D3D12TranslationLayer::ImmediateContext& ImmCtx = FlushBatchAndGetImmediateContext();
+
+        if (ImmCtx.IsResidencyManagementEnabled() && pResidencyHandle)
+        {
+            // Pin the resource while it is checked out to the caller.
+            pResidencyHandle->Pin();
+
+            // Ensure that the resource is resident after the waits on the callers queue are satisfied.
+            std::unique_ptr<D3DX12Residency::ResidencySet> pResidencySet = std::unique_ptr<D3DX12Residency::ResidencySet>(
+                ImmCtx.GetResidencyManager().CreateResidencySet());
+
+            pResidencySet->Open();
+            pResidencySet->Insert(pResidencyHandle);
+            pResidencySet->Close();
+            
+            ImmCtx.GetResidencyManager().SubmitCommandQueueCommand(pCommmandQueue, []() {}, pResidencySet.get());
+
+            // Add a deferred wait for the residency operation.  This operation is signaled on the callers queue.
+            // This handles the case where caller decides to return the resource without scheduling dependent work
+            // that they provide fence/value pair for.
+            pResource->AddFenceForUnwrapResidency(pCommmandQueue);
+        }
 
         for (UINT i = 0; i < (UINT)D3D12TranslationLayer::COMMAND_LIST_TYPE::MAX_VALID; ++i)
         {
@@ -1157,6 +1179,7 @@ namespace D3D11On12
         try
         {
             auto* pResource = static_cast<Resource*>(p11on12DDIResource)->ImmediateResource();
+            D3DX12Residency::ManagedObject* pResidencyHandle = pResource->GetResidencyHandle();
             
             std::vector<D3D12TranslationLayer::DeferredWait> DeferredWaits;
             DeferredWaits.reserve(NumSync); // throw( bad_alloc )
@@ -1174,6 +1197,13 @@ namespace D3D11On12
             }
 
             pResource->AddDeferredWaits(DeferredWaits);
+
+            if (ImmCtx.IsResidencyManagementEnabled() && pResidencyHandle)
+            {
+                // Transition from an explicit pin to a pin until these waits are satisfied.
+                pResidencyHandle->AddPinWaits(NumSync, pSignalValues, ppFences);
+                pResidencyHandle->UnPin();
+            }
         }
         catch( std::bad_alloc& )
         {
