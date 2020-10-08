@@ -420,7 +420,7 @@ namespace D3D11On12
         /* End DDI Entry points*/
 
         VideoDevice *GetVideoDevice();
-        HRESULT EnsureVideoDevice();
+        virtual HRESULT EnsureVideoDevice();
 
         D3D12TranslationLayer::ResourceAllocationContext GetResourceAllocationContext() const noexcept { return m_ResourceAllocationContext; }
         D3D10DDI_HRTDEVICE GetRTDeviceHandle() const { return m_hRTDevice; }
@@ -455,7 +455,6 @@ namespace D3D11On12
 
         const D3D12TranslationLayer::ResourceAllocationContext m_ResourceAllocationContext;
 
-        BYTE m_pVideoDeviceSpace[sizeof(VideoDevice)];
         AutoCleanupPtr<VideoDevice> m_pVideoDevice;
 
         struct PresentExtensionData

@@ -7,7 +7,7 @@ namespace D3D11On12
     class VideoProcess: public DeviceChild
     {
     public:
-        VideoProcess(Device& parent, UINT MaxInputStreams, const D3D11_1DDI_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS& rateConversionCaps, bool AutoProcessingSupported);
+        static void CreateVideoProcess(D3D11_1DDI_HVIDEOPROCESSOR hVideoProcess, Device& parent, UINT MaxInputStreams, const D3D11_1DDI_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS& rateConversionCaps, bool AutoProcessingSupported);
 
         static VideoProcess* CastFrom(D3D11_1DDI_HVIDEOPROCESSOR hVideoProcess) noexcept { return reinterpret_cast<VideoProcess*>(hVideoProcess.pDrvPrivate); }
 
@@ -45,7 +45,7 @@ namespace D3D11On12
         static HRESULT APIENTRY VideoProcessorBlt(_In_ D3D10DDI_HDEVICE, _In_ D3D11_1DDI_HVIDEOPROCESSOR, _In_ D3D11_1DDI_HVIDEOPROCESSOROUTPUTVIEW, _In_ UINT, _In_ UINT StreamCount, _In_reads_(StreamCount) CONST D3D11_1DDI_VIDEO_PROCESSOR_STREAM*) noexcept;
         D3D12TranslationLayer::BatchedVideoProcess* UnderlyingVideoProcess()
         {
-            return &m_UnderlyingVideoProcess;
+            return m_UnderlyingVideoProcess.get();
         }
 
         // helpers
@@ -54,7 +54,10 @@ namespace D3D11On12
         D3D12_VIDEO_PROCESS_DEINTERLACE_FLAGS GetDeinterlaceMode(const D3D11_1DDI_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS & rateConversionCaps);
 
     protected:
-        D3D12TranslationLayer::BatchedVideoProcess m_UnderlyingVideoProcess;
+        VideoProcess(Device& parent, UINT MaxInputStreams, bool AutoProcessingSupported);
+        virtual void ProcessFrames(UINT streamCount) { UnderlyingVideoProcess()->ProcessFrames(&m_inputArguments, streamCount, &m_outputArguments); }
+
+        std::unique_ptr<D3D12TranslationLayer::BatchedVideoProcess> m_UnderlyingVideoProcess;
 
         const UINT m_MaxInputStreams;
         const bool m_fAutoProcessingSupported;

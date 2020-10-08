@@ -9,7 +9,7 @@ namespace D3D11On12
     public:
         VideoDevice(Device& parent);
 
-        void FillVideoDDIFunctions(D3DWDDM2_4DDI_VIDEODEVICEFUNCS* pFuncs);
+        virtual void FillVideoDDIFunctions(D3DWDDM2_4DDI_VIDEODEVICEFUNCS* pFuncs);
 
         // Video DDI Entry points
         static void APIENTRY GetVideoDecoderProfileCount(_In_ D3D10DDI_HDEVICE, _Out_ UINT*);
@@ -55,7 +55,7 @@ namespace D3D11On12
 
         // End Video DDI entry points
 #endif
-        D3D12TranslationLayer::VideoDevice* UnderlyingVideoDevice()
+        virtual D3D12TranslationLayer::VideoDevice* UnderlyingVideoDevice()
         {
             return &m_UnderlyingVideoDevice;
         }

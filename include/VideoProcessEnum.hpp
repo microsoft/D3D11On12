@@ -24,14 +24,16 @@ namespace D3D11On12
 
     public:
         // helpers
-        void CacheVideoProcessorInfo(_In_ CONST D3D11_1DDIARG_CREATEVIDEOPROCESSORENUM *pCreateVideoProcessEnum);
+        virtual void CacheVideoProcessorInfo(_In_ CONST D3D11_1DDIARG_CREATEVIDEOPROCESSORENUM *pCreateVideoProcessEnum);
         void GetCreationArgs(_Out_ D3D12TranslationLayer::VIDEO_PROCESS_ENUM_ARGS *pCreationArgs) { *pCreationArgs = m_creationArgs; }
         bool IsFormatConversionSupported(DXGI_FORMAT inputFormat, DXGI_COLOR_SPACE_TYPE inputColorSpace, DXGI_FORMAT outputFormat, DXGI_COLOR_SPACE_TYPE outputColorSpace);
-        bool IsAutoProcessingSupported() { return m_UnderlyingVideoProcessEnum.IsAutoProcessingSupported(); }
+        bool IsAutoProcessingSupported() { return UnderlyingVideoProcessEnum()->IsAutoProcessingSupported(); }
         D3D11_1DDI_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS GetRateConversionCaps(UINT RateConversionIndex);
 
     protected:
-        D3D12TranslationLayer::VideoProcessEnum m_UnderlyingVideoProcessEnum;
+        virtual D3D12TranslationLayer::VideoProcessEnum* UnderlyingVideoProcessEnum() { return m_UnderlyingVideoProcessEnum.get(); }
+
+        std::unique_ptr<D3D12TranslationLayer::VideoProcessEnum> m_UnderlyingVideoProcessEnum;
 
         D3D12TranslationLayer::VIDEO_PROCESS_ENUM_ARGS m_creationArgs;
         D3D11_1DDI_VIDEO_PROCESSOR_CAPS m_videoProcessCaps = {};
