@@ -37,9 +37,9 @@ namespace D3D11On12
 
     VideoProcessEnum::VideoProcessEnum(Device& parent) :
         DeviceChild(parent),
-        m_UnderlyingVideoProcessEnum(&parent.GetImmediateContextNoFlush())
+        m_UnderlyingVideoProcessEnum(std::make_unique<D3D12TranslationLayer::VideoProcessEnum>(&parent.GetImmediateContextNoFlush()))
     {
-        m_UnderlyingVideoProcessEnum.Initialize();
+        UnderlyingVideoProcessEnum()->Initialize();
     }
 
     _Use_decl_annotations_
@@ -53,9 +53,9 @@ namespace D3D11On12
         m_creationArgs.OutputHeight = pCreateVideoProcessEnum->Desc.OutputHeight;
         m_creationArgs.OutputFrameRate = pCreateVideoProcessEnum->Desc.OutputFrameRate;
 
-        m_UnderlyingVideoProcessEnum.CacheVideoProcessInfo(m_creationArgs);
+        UnderlyingVideoProcessEnum()->CacheVideoProcessInfo(m_creationArgs);
 
-        std::vector<D3D12TranslationLayer::VIDEO_PROCESS_SUPPORT> vpSupportTuples = m_UnderlyingVideoProcessEnum.GetVPCapsSupportTuples();
+        std::vector<D3D12TranslationLayer::VIDEO_PROCESS_SUPPORT> vpSupportTuples = UnderlyingVideoProcessEnum()->GetVPCapsSupportTuples();
 
         ZeroMemory(&m_videoProcessCaps, sizeof(m_videoProcessCaps));
         m_rateConversionCaps.clear();
@@ -79,7 +79,7 @@ namespace D3D11On12
             D3D12_VIDEO_PROCESS_DEINTERLACE_FLAGS DeinterlaceSupport = (rateConversionCap.ConversionCaps & D3D11_1DDI_VIDEO_PROCESSOR_CONVERSION_CAPS_DEINTERLACE_ADAPTIVE) != 0 
                                                                      ? D3D12_VIDEO_PROCESS_DEINTERLACE_FLAG_CUSTOM : D3D12_VIDEO_PROCESS_DEINTERLACE_FLAG_BOB;
 
-            auto referenceInfo = m_UnderlyingVideoProcessEnum.UpdateReferenceInfo(DeinterlaceSupport);
+            auto referenceInfo = UnderlyingVideoProcessEnum()->UpdateReferenceInfo(DeinterlaceSupport);
 
             if (referenceInfo.frameRateConversionSupported)
             {
@@ -93,7 +93,7 @@ namespace D3D11On12
         // Max input streams
         {
             D3D12_FEATURE_DATA_VIDEO_PROCESS_MAX_INPUT_STREAMS vpMaxInputStreams = {};
-            m_UnderlyingVideoProcessEnum.CheckFeatureSupport(D3D12_FEATURE_VIDEO_PROCESS_MAX_INPUT_STREAMS, &vpMaxInputStreams, sizeof(vpMaxInputStreams));
+            UnderlyingVideoProcessEnum()->CheckFeatureSupport(D3D12_FEATURE_VIDEO_PROCESS_MAX_INPUT_STREAMS, &vpMaxInputStreams, sizeof(vpMaxInputStreams));
             m_videoProcessCaps.MaxInputStreams = vpMaxInputStreams.MaxInputStreams;
             m_videoProcessCaps.MaxStreamStates = m_videoProcessCaps.MaxInputStreams;       // Assuming identical values.
             m_creationArgs.MaxInputStreams = vpMaxInputStreams.MaxInputStreams;
@@ -158,10 +158,10 @@ namespace D3D11On12
             D3D12_VIDEO_FRAME_STEREO_FORMAT_NONE, 
             m_creationArgs.OutputFrameRate
         };
-        m_UnderlyingVideoProcessEnum.CheckFeatureSupport(D3D12_FEATURE_VIDEO_PROCESS_SUPPORT, &dx12Support, sizeof(dx12Support));
+        UnderlyingVideoProcessEnum()->CheckFeatureSupport(D3D12_FEATURE_VIDEO_PROCESS_SUPPORT, &dx12Support, sizeof(dx12Support));
 
         D3D12_FEATURE_DATA_FORMAT_SUPPORT FmtSupport = { outputFormat };
-        m_UnderlyingVideoProcessEnum.m_pParent->CheckFormatSupport(FmtSupport);
+        UnderlyingVideoProcessEnum()->m_pParent->CheckFormatSupport(FmtSupport);
         return VideoTranslate::IsSupported(dx12Support);
     }
 

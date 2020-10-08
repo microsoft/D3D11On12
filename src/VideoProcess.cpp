@@ -24,7 +24,7 @@ namespace D3D11On12
         pVideoProcessEnum->GetCreationArgs(&createArgs);
         D3D11_1DDI_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS rateConversionCaps = pVideoProcessEnum->GetRateConversionCaps(pCreateVideoProcessor->RateConversionCapsIndex);
 
-        new (hVideoProcess.pDrvPrivate) VideoProcess(*pDevice, createArgs.MaxInputStreams, rateConversionCaps, pVideoProcessEnum->IsAutoProcessingSupported());
+        VideoProcess::CreateVideoProcess(hVideoProcess, *pDevice, createArgs.MaxInputStreams, rateConversionCaps, pVideoProcessEnum->IsAutoProcessingSupported());
 
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
@@ -53,9 +53,14 @@ namespace D3D11On12
         return D3D12_VIDEO_PROCESS_DEINTERLACE_FLAG_BOB;
     }
 
-    VideoProcess::VideoProcess(Device& parent, UINT MaxInputStreams, const D3D11_1DDI_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS& rateConversionCaps, bool AutoProcessingSupported) :
+    void VideoProcess::CreateVideoProcess(D3D11_1DDI_HVIDEOPROCESSOR hVideoProcess, Device& parent, UINT MaxInputStreams, const D3D11_1DDI_VIDEO_PROCESSOR_RATE_CONVERSION_CAPS& rateConversionCaps, bool AutoProcessingSupported)
+    {
+        VideoProcess* videoProcess = new (hVideoProcess.pDrvPrivate) VideoProcess(parent, MaxInputStreams, AutoProcessingSupported);
+        videoProcess->m_UnderlyingVideoProcess = std::make_unique<D3D12TranslationLayer::BatchedVideoProcessImpl>(parent.GetBatchedContext(), videoProcess->GetDeinterlaceMode(rateConversionCaps));
+    }
+
+    VideoProcess::VideoProcess(Device& parent, UINT MaxInputStreams, bool AutoProcessingSupported) :
         DeviceChild(parent),
-        m_UnderlyingVideoProcess(parent.GetBatchedContext(), GetDeinterlaceMode(rateConversionCaps)),
         m_MaxInputStreams(MaxInputStreams),
         m_fAutoProcessingSupported(AutoProcessingSupported)
     {
@@ -154,7 +159,7 @@ namespace D3D11On12
              GetViewInfo(hVideoProcessorOutputView, &m_outputArguments.CurrentFrame[1], 1);
          }
 
-        m_UnderlyingVideoProcess.ProcessFrames(&m_inputArguments, StreamCount, &m_outputArguments);
+         ProcessFrames(StreamCount);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
