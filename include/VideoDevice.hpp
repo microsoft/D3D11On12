@@ -8,6 +8,7 @@ namespace D3D11On12
     {
     public:
         VideoDevice(Device& parent);
+        virtual ~VideoDevice() {}
 
         virtual void FillVideoDDIFunctions(D3DWDDM2_4DDI_VIDEODEVICEFUNCS* pFuncs);
 
