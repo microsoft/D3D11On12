@@ -56,17 +56,20 @@ namespace D3D11On12
 
         // End Video DDI entry points
 #endif
-        virtual D3D12TranslationLayer::VideoDevice* UnderlyingVideoDevice()
+        D3D12TranslationLayer::VideoDevice* UnderlyingVideoDevice()
         {
-            return &m_UnderlyingVideoDevice;
+            return m_UnderlyingVideoDevice.get();
         }
+
+        virtual void Initialize();
+
+    protected:
+        std::unique_ptr<D3D12TranslationLayer::VideoDevice> m_UnderlyingVideoDevice;
 
     private:
         static bool CheckHardwareDRMSupport(_In_ Device *pDevice, _In_ const GUID* pCryptoType, _In_ const GUID* pDecodeProfile);
         static void GetContentProtectionSystems(_In_ Device *pDevice, _In_ const GUID *pCryptoType, std::vector<GUID> &contentProtectionSystems);
         static void GetDecodeProfiles(_In_ Device *pDevice, _In_ const GUID *pDecodeProfile, std::vector<GUID> &decodeProfiles);
-
-        D3D12TranslationLayer::VideoDevice m_UnderlyingVideoDevice;
     };
 
 };
