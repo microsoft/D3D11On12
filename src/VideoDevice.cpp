@@ -133,9 +133,13 @@ namespace D3D11On12
     }
 
     VideoDevice::VideoDevice(Device& parent) :
-        DeviceChild(parent),
-        m_UnderlyingVideoDevice(&parent.GetImmediateContextNoFlush())
+        DeviceChild(parent)
     {
+    }
+
+    void VideoDevice::Initialize()
+    {
+        m_UnderlyingVideoDevice = std::make_unique<D3D12TranslationLayer::VideoDevice>(&m_parentDevice.GetImmediateContextNoFlush());
     }
 
     void APIENTRY VideoDevice::GetVideoDecoderProfileCount(_In_ D3D10DDI_HDEVICE hDevice, _Out_ UINT *pProfileCount)

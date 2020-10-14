@@ -149,6 +149,7 @@ namespace D3D11On12
         if (!m_pVideoDevice)
         {
             m_pVideoDevice.reset(new VideoDevice(*this));
+            m_pVideoDevice->Initialize();
         }
 
         return S_OK;
