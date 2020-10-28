@@ -55,6 +55,8 @@ namespace D3D11On12
 
     protected:
         VideoProcess(Device& parent, UINT MaxInputStreams, bool AutoProcessingSupported);
+        virtual ~VideoProcess() {}
+
         virtual void ProcessFrames(UINT streamCount) { UnderlyingVideoProcess()->ProcessFrames(&m_inputArguments, streamCount, &m_outputArguments); }
 
         std::unique_ptr<D3D12TranslationLayer::BatchedVideoProcess> m_UnderlyingVideoProcess;

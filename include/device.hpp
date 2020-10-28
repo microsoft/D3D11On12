@@ -455,7 +455,7 @@ namespace D3D11On12
 
         const D3D12TranslationLayer::ResourceAllocationContext m_ResourceAllocationContext;
 
-        AutoCleanupPtr<VideoDevice> m_pVideoDevice;
+        std::unique_ptr<VideoDevice> m_pVideoDevice;
 
         struct PresentExtensionData
         {
