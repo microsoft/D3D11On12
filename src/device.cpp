@@ -1167,6 +1167,7 @@ namespace D3D11On12
                 {
                     auto* pFence = pCommandListManager->GetFence();
                     pCommmandQueue->Wait(pFence->Get(), WaitValue);
+                    pCommandListManager->SetNeedSubmitFence();
                 }
             }
         }
