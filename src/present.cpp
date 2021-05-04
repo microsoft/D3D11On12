@@ -1,6 +1,7 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 #include "pch.hpp"
+#include "SwapChainHelper.hpp"
 
 namespace D3D11On12
 {
@@ -189,39 +190,10 @@ namespace D3D11On12
         }
 
         auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pArgs->pSrc->ImmediateResource());
+        auto swapChainHelper = D3D12TranslationLayer::SwapChainHelper( pSwapChain );
         m_SwapChainManager->WaitForMaximumFrameLatency();
 
-        unique_comptr<ID3D12Resource> backBuffer;
-        pSwapChain->GetBuffer(pSwapChain->GetCurrentBackBufferIndex(), IID_PPV_ARGS(&backBuffer));
-
-        D3D12TranslationLayer::ResourceCreationArgs destArgs = *pArgs->pSrc->ImmediateResource()->Parent();
-        destArgs.m_appDesc.m_Samples = 1;
-        destArgs.m_appDesc.m_bindFlags = D3D12TranslationLayer::RESOURCE_BIND_RENDER_TARGET;
-        destArgs.m_desc12.SampleDesc.Count = 1;
-        destArgs.m_desc12.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        auto destResource = D3D12TranslationLayer::Resource::OpenResource(
-            &GetImmediateContextNoFlush(),
-            destArgs,
-            backBuffer.get(),
-            D3D12TranslationLayer::DeferredDestructionType::Submission,
-            D3D12_RESOURCE_STATE_COMMON);
-        D3D12_RESOURCE_STATES OperationState;
-        if (pArgs->pSrc->ImmediateResource()->AppDesc()->Samples() > 1)
-        {
-            GetImmediateContextNoFlush().ResourceResolveSubresource(destResource.get(), 0, pArgs->pSrc->ImmediateResource(), 0, destArgs.m_appDesc.Format());
-            OperationState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
-        }
-        else
-        {
-            GetImmediateContextNoFlush().ResourceCopy(destResource.get(), pArgs->pSrc->ImmediateResource());
-            OperationState = D3D12_RESOURCE_STATE_COPY_DEST;
-        }
-        D3D12_RESOURCE_BARRIER Barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.get(), OperationState, D3D12_RESOURCE_STATE_COMMON);
-        GetImmediateContextNoFlush().GetGraphicsCommandList()->ResourceBarrier(1, &Barrier);
-        GetImmediateContextNoFlush().Flush(D3D12TranslationLayer::COMMAND_LIST_TYPE_ALL_MASK);
-
-        HRESULT hr = pSwapChain->Present(pKMTPresent->FlipInterval, pKMTPresent->FlipInterval == 0 ? DXGI_PRESENT_ALLOW_TEARING : 0);
-        GetImmediateContextNoFlush().GetCommandListManager(D3D12TranslationLayer::COMMAND_LIST_TYPE::GRAPHICS)->SetNeedSubmitFence();
+        HRESULT hr = swapChainHelper.StandardPresent( GetImmediateContextNoFlush(), pKMTPresent, *pArgs->pSrc->ImmediateResource() );
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 
