@@ -1,143 +1,10 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 #include "pch.hpp"
+#include "SwapChainHelper.hpp"
 
 namespace D3D11On12
 {
-    template <typename T, size_t Size> struct CircularArray
-    {
-        T m_Array[Size];
-        struct iterator
-        {
-            using difference_type = ptrdiff_t;
-            using value_type = T;
-            using pointer = T*;
-            using reference = T&;
-            using iterator_category = std::random_access_iterator_tag;
-            T* m_Begin;
-            T* m_Current;
-            iterator(T* Begin, T* Current) : m_Begin(Begin), m_Current(Current) { }
-            iterator increment(ptrdiff_t distance) const
-            {
-                ptrdiff_t totalDistance = (distance + std::distance(m_Begin, m_Current)) % Size;
-                totalDistance = totalDistance >= 0 ? totalDistance : totalDistance + Size;
-                return iterator(m_Begin, m_Begin + totalDistance);
-            }
-            iterator& operator++() { *this = increment(1); return *this; }
-            iterator operator++(int) { iterator ret = *this; *this = increment(1); return ret; }
-            iterator& operator--() { *this = increment(-1); return *this; }
-            iterator operator--(int) { iterator ret = *this; *this = increment(-1); return ret; }
-            iterator operator+(ptrdiff_t v) { return increment(v); }
-            iterator& operator+=(ptrdiff_t v) { *this = increment(v); return *this; }
-            iterator operator-(ptrdiff_t v) { return increment(-v); }
-            iterator& operator-=(ptrdiff_t v) { *this = increment(-v); return *this; }
-            bool operator==(iterator const& o) const { return o.m_Begin == m_Begin && o.m_Current == m_Current; }
-            bool operator!=(iterator const& o) const { return !(o == *this); }
-            reference operator*() { return *m_Current; }
-            pointer operator->() { return m_Current; }
-            ptrdiff_t operator-(iterator const& o) const
-            {
-                assert(o.m_Begin == m_Begin);
-                ptrdiff_t rawDistance = std::distance(o.m_Current, m_Current);
-                return rawDistance >= 0 ? rawDistance : rawDistance + Size;
-            }
-        };
-
-        iterator begin() { return iterator(m_Array, m_Array); }
-        T& operator[](size_t index) { return *(begin() + index); }
-    };
-
-    class SwapChainManager
-    {
-    public:
-        SwapChainManager(D3D12TranslationLayer::ImmediateContext& ImmCtx)
-            : m_ImmCtx(ImmCtx)
-        {
-        }
-        ~SwapChainManager()
-        {
-            m_ImmCtx.WaitForCompletion(D3D12TranslationLayer::COMMAND_LIST_TYPE_ALL_MASK);
-        }
-        IDXGISwapChain3* GetSwapChainForWindow(HWND hwnd, Resource& presentingResource)
-        {
-            auto& spSwapChain = m_SwapChains[hwnd];
-            auto pResourceDesc = presentingResource.ImmediateResource()->AppDesc();
-            DXGI_SWAP_CHAIN_DESC Desc = {};
-            if (spSwapChain)
-            {
-                spSwapChain->GetDesc(&Desc);
-                if (Desc.BufferDesc.Format != pResourceDesc->Format() ||
-                    Desc.BufferDesc.Width != pResourceDesc->Width() ||
-                    Desc.BufferDesc.Height != pResourceDesc->Height())
-                {
-                    m_ImmCtx.WaitForCompletion(D3D12TranslationLayer::COMMAND_LIST_TYPE_ALL_MASK);
-                    ThrowFailure(spSwapChain->ResizeBuffers(BufferCount,
-                        pResourceDesc->Width(),
-                        pResourceDesc->Height(),
-                        pResourceDesc->Format(),
-                        DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING));
-                }
-            }
-            else
-            {
-                Desc.BufferCount = BufferCount;
-                Desc.BufferDesc.Format = pResourceDesc->Format();
-                Desc.BufferDesc.Width = pResourceDesc->Width();
-                Desc.BufferDesc.Height = pResourceDesc->Height();
-                Desc.OutputWindow = hwnd;
-                Desc.Windowed = 1;
-                Desc.SampleDesc.Count = 1;
-                Desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-                Desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-                Desc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-                unique_comptr<IDXGIFactory> spFactory;
-                ThrowFailure(CreateDXGIFactory2(0, IID_PPV_ARGS(&spFactory)));
-                unique_comptr<IDXGISwapChain> spBaseSwapChain;
-                ThrowFailure(spFactory->CreateSwapChain(
-                    m_ImmCtx.GetCommandQueue(D3D12TranslationLayer::COMMAND_LIST_TYPE::GRAPHICS),
-                    &Desc, &spBaseSwapChain));
-                ThrowFailure(spBaseSwapChain->QueryInterface(&spSwapChain));
-            }
-            return spSwapChain.get();
-        }
-        void SetMaximumFrameLatency(UINT MaxFrameLatency)
-        {
-            m_MaximumFrameLatency = MaxFrameLatency;
-        }
-        bool IsMaximumFrameLatencyReached()
-        {
-            UINT64 CompletedFenceValue = m_ImmCtx.GetCompletedFenceValue(D3D12TranslationLayer::COMMAND_LIST_TYPE::GRAPHICS);
-            while (m_PresentFenceValuesBegin != m_PresentFenceValuesEnd &&
-                *m_PresentFenceValuesBegin <= CompletedFenceValue)
-            {
-                ++m_PresentFenceValuesBegin;
-            }
-            return std::distance(m_PresentFenceValuesBegin, m_PresentFenceValuesEnd) >= (ptrdiff_t)m_MaximumFrameLatency;
-        }
-        void WaitForMaximumFrameLatency()
-        {
-            // Looping, because max frame latency can be dropped, and we may
-            // need to wait for multiple presents to complete here.
-            while (IsMaximumFrameLatencyReached())
-            {
-                m_ImmCtx.WaitForFenceValue(
-                    D3D12TranslationLayer::COMMAND_LIST_TYPE::GRAPHICS,
-                    *m_PresentFenceValuesBegin);
-            }
-        }
-
-    private:
-        static constexpr UINT BufferCount = 2;
-        D3D12TranslationLayer::ImmediateContext& m_ImmCtx;
-        std::map<HWND, unique_comptr<IDXGISwapChain3>> m_SwapChains;
-        UINT m_MaximumFrameLatency = 3;
-        CircularArray<UINT64, 17> m_PresentFenceValues = {};
-        // The fence value to wait on
-        decltype(m_PresentFenceValues)::iterator m_PresentFenceValuesBegin = m_PresentFenceValues.begin();
-        // The fence value to write to
-        decltype(m_PresentFenceValues)::iterator m_PresentFenceValuesEnd = m_PresentFenceValuesBegin;
-    };
-
     HRESULT APIENTRY Device::Present1(DXGI1_6_1_DDI_ARG_PRESENT* pArgs)
     {
         D3D11on12_DDI_ENTRYPOINT_START();
@@ -319,43 +186,14 @@ namespace D3D11On12
         std::lock_guard lock(m_SwapChainManagerMutex);
         if (!m_SwapChainManager)
         {
-            m_SwapChainManager = std::make_shared<SwapChainManager>(GetImmediateContextNoFlush());
+            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(GetImmediateContextNoFlush());
         }
 
-        auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pArgs->pSrc);
+        auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pArgs->pSrc->ImmediateResource());
+        auto swapChainHelper = D3D12TranslationLayer::SwapChainHelper( pSwapChain );
         m_SwapChainManager->WaitForMaximumFrameLatency();
 
-        unique_comptr<ID3D12Resource> backBuffer;
-        pSwapChain->GetBuffer(pSwapChain->GetCurrentBackBufferIndex(), IID_PPV_ARGS(&backBuffer));
-
-        D3D12TranslationLayer::ResourceCreationArgs destArgs = *pArgs->pSrc->ImmediateResource()->Parent();
-        destArgs.m_appDesc.m_Samples = 1;
-        destArgs.m_appDesc.m_bindFlags = D3D12TranslationLayer::RESOURCE_BIND_RENDER_TARGET;
-        destArgs.m_desc12.SampleDesc.Count = 1;
-        destArgs.m_desc12.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-        auto destResource = D3D12TranslationLayer::Resource::OpenResource(
-            &GetImmediateContextNoFlush(),
-            destArgs,
-            backBuffer.get(),
-            D3D12TranslationLayer::DeferredDestructionType::Submission,
-            D3D12_RESOURCE_STATE_COMMON);
-        D3D12_RESOURCE_STATES OperationState;
-        if (pArgs->pSrc->ImmediateResource()->AppDesc()->Samples() > 1)
-        {
-            GetImmediateContextNoFlush().ResourceResolveSubresource(destResource.get(), 0, pArgs->pSrc->ImmediateResource(), 0, destArgs.m_appDesc.Format());
-            OperationState = D3D12_RESOURCE_STATE_RESOLVE_DEST;
-        }
-        else
-        {
-            GetImmediateContextNoFlush().ResourceCopy(destResource.get(), pArgs->pSrc->ImmediateResource());
-            OperationState = D3D12_RESOURCE_STATE_COPY_DEST;
-        }
-        D3D12_RESOURCE_BARRIER Barrier = CD3DX12_RESOURCE_BARRIER::Transition(backBuffer.get(), OperationState, D3D12_RESOURCE_STATE_COMMON);
-        GetImmediateContextNoFlush().GetGraphicsCommandList()->ResourceBarrier(1, &Barrier);
-        GetImmediateContextNoFlush().Flush(D3D12TranslationLayer::COMMAND_LIST_TYPE_ALL_MASK);
-
-        HRESULT hr = pSwapChain->Present(pKMTPresent->FlipInterval, pKMTPresent->FlipInterval == 0 ? DXGI_PRESENT_ALLOW_TEARING : 0);
-        GetImmediateContextNoFlush().GetCommandListManager(D3D12TranslationLayer::COMMAND_LIST_TYPE::GRAPHICS)->SetNeedSubmitFence();
+        HRESULT hr = swapChainHelper.StandardPresent( GetImmediateContextNoFlush(), pKMTPresent, *pArgs->pSrc->ImmediateResource() );
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 
@@ -366,7 +204,7 @@ namespace D3D11On12
         std::lock_guard lock(m_SwapChainManagerMutex);
         if (!m_SwapChainManager)
         {
-            m_SwapChainManager = std::make_shared<SwapChainManager>(GetImmediateContextNoFlush());
+            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(GetImmediateContextNoFlush());
         }
         m_SwapChainManager->SetMaximumFrameLatency(MaxFrameLatency);
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
@@ -379,7 +217,7 @@ namespace D3D11On12
         std::lock_guard lock(m_SwapChainManagerMutex);
         if (!m_SwapChainManager)
         {
-            m_SwapChainManager = std::make_shared<SwapChainManager>(GetImmediateContextNoFlush());
+            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(GetImmediateContextNoFlush());
         }
         ret = m_SwapChainManager->IsMaximumFrameLatencyReached();
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);

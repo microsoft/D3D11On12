@@ -472,7 +472,7 @@ namespace D3D11On12
         };
         PresentExtension m_PresentExt = { this };
         std::mutex m_SwapChainManagerMutex;
-        std::shared_ptr<class SwapChainManager> m_SwapChainManager;
+        std::shared_ptr<D3D12TranslationLayer::SwapChainManager> m_SwapChainManager;
         struct SyncTokenExtension : D3D12TranslationLayer::BatchedExtension
         {
             Device* const m_Device;
