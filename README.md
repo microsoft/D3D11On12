@@ -19,17 +19,22 @@ The device object internally uses an instance of the D3D12TranslationLayer immed
 
 ## Building
 
-This project is expected to be included in a CMake build environment where the D3D12TranslationLayer project is also included. Additionally, the [WDK](https://docs.microsoft.com/en-us/windows-hardware/drivers/download-the-wdk) (Windows Driver Kit) must be installed, in order to provide `d3d10umddi.h` to D3D11On12, and in order to generate the D3D12TranslationLayer_WDK project, which hosts some code required to parse DXBC shaders and containers.
+In order to build D3D11On12, the [WDK](https://docs.microsoft.com/en-us/windows-hardware/drivers/download-the-wdk) (Windows Driver Kit) must be installed, in order to provide `d3d10umddi.h` to D3D11On12, and in order to generate the D3D12TranslationLayer_WDK project, which hosts some code required to parse DXBC shaders and containers. The D3D12TranslationLayer and its subprojects, D3D12TranslationLayer_WDK and DXBCParser, will be fetched from GitHub when building with CMake if D3D12TranslationLayer_WDK isn't already included, such as by a parent CMakeLists.txt that has already entered that project. Assuming there was a top level `CMakeLists.txt` in a directory that included both D3D11On12 and D3D12TranslationLayer, you could achieve that like this:
 
-At the time of publishing, the D3D11On12 and D3D12TranslationLayer require **insider** versions of the SDK and WDK. Those can be found [here](https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewWDK).
+```CMake
+cmake_minimum_required(VERSION 3.14)
+include(FetchContent)
 
-An example CMakeLists.txt for building D3D11On12 would be:
+FetchContent_Declare(
+    d3d12translationlayer
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/D3D12TranslationLayer
+)
+FetchContent_MakeAvailable(d3d12translationlayer)
 
-```
-cmake_minimum_required(VERSION 3.13)
-add_subdirectory(D3D12TranslationLayer)
 add_subdirectory(D3D11On12)
 ```
+
+At the time of publishing, the D3D11On12 and D3D12TranslationLayer require **insider** versions of the SDK and WDK. Those can be found [here](https://www.microsoft.com/en-us/software-download/windowsinsiderpreviewWDK).
 
 D3D11On12 requires C++17, and only supports building with MSVC at the moment.
 
