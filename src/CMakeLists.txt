@@ -1,6 +1,7 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.14)
+include(FetchContent)
 
 file(GLOB SRC CONFIGURE_DEPENDS *.cpp)
 file(GLOB INC ../include/*.h ../include/*.hpp ../interface/*.h *.h *.hpp)
@@ -9,6 +10,14 @@ file(GLOB INL ../include/*.inl *.inl)
 file(GLOB_RECURSE EXTERNAL_INC ../external/*.h ../external/*.hpp)
 
 add_library(d3d11on12 SHARED ${SRC} ${INC} ${INL} ${EXTERNAL_INC} d3d11on12.rc d3d11on12.def)
+
+FetchContent_Declare(
+    d3d12translationlayer
+    GIT_REPOSITORY https://github.com/microsoft/D3D12TranslationLayer.git
+    GIT_TAG        6ba530c050d781d82289d26f04db1119861bb521
+)
+FetchContent_MakeAvailable(d3d12translationlayer)
+
 target_link_libraries(d3d11on12 d3d12translationlayer_wdk)
 target_include_directories(d3d11on12
     PRIVATE ../include
