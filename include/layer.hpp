@@ -37,6 +37,11 @@ namespace D3D11On12
     OPEN_TRYCATCH
 #else
 #define D3D11on12_DDI_ENTRYPOINT_START() \
+    { \
+        char text[MAX_PATH]; \
+        sprintf_s(text, MAX_PATH, "%s\n", __FUNCTION__); \
+        OutputDebugStringA(text); \
+    } \
     OPEN_TRYCATCH
 #endif
 
