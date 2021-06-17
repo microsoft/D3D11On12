@@ -11,6 +11,8 @@ For more details about D3D11On12, see:
 * [D3D11On12 reference documentation](https://docs.microsoft.com/en-us/windows/win32/api/d3d11on12/)
 * D3D11On12 blog posts: [First](https://devblogs.microsoft.com/directx/direct3d-11-on-12-updates/) and [second](https://devblogs.microsoft.com/directx/coming-to-directx-12-d3d9on12-and-d3d11on12-resource-interop-apis/)
 
+Make sure that you visit the [DirectX Landing Page](https://devblogs.microsoft.com/directx/landing-page/) for more resources for DirectX developers.
+
 ## How does it work?
 
 The primary entrypoint to D3D11On12 is a custom version of the normal D3D11 driver [OpenAdapter10_2](https://docs.microsoft.com/en-us/windows-hardware/drivers/display/initializing-communication-with-the-direct3d-version-11-ddi) entrypoint, named `OpenAdapter_D3D11On12`, where D3D11 provides additional information to the mapping layer. In response to this, like a normal driver, D3D11On12 returns an adapter object, which exposes DDIs to create a device. The device is created like normal, but in addition to the normal DDI tables, it also exposes an `ID3D11On12DDIDevice` interface.
