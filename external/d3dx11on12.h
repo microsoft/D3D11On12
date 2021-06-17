@@ -38,7 +38,18 @@ struct CD3DX11ON12_HEAP_PROPERTIES_FROM11 : public CD3DX12_HEAP_PROPERTIES
         case D3D11_USAGE_IMMUTABLE:
             return CD3DX12_HEAP_PROPERTIES( CPUAccessFlags ? D3D12_HEAP_TYPE( 0 ) : D3D12_HEAP_TYPE_DEFAULT );
         case D3D11_USAGE_DYNAMIC:
-            return CD3DX12_HEAP_PROPERTIES( CPUAccessFlags == D3D11_CPU_ACCESS_WRITE ? D3D12_HEAP_TYPE_UPLOAD : D3D12_HEAP_TYPE( 0 ) );
+            {
+                if((CPUAccessFlags & D3D11_CPU_ACCESS_WRITE) != 0)
+                    return CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD);
+
+                // DJB FIXME: The following is inaccurate but DWM seems to call
+                // to create a dynamic buffer for reading in one of the first
+                // few buffers it creates
+                if ((CPUAccessFlags & D3D11_CPU_ACCESS_READ) != 0)
+                    return CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_READBACK);
+
+                return CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE(0));
+            }
         case D3D11_USAGE_STAGING:
             return CD3DX12_HEAP_PROPERTIES( CPUAccessFlags == D3D11_CPU_ACCESS_WRITE
                 ? D3D12_HEAP_TYPE_UPLOAD

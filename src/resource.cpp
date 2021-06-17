@@ -88,6 +88,8 @@ namespace D3D11On12
         Device *pDevice = Device::CastFrom(hDevice);
         D3D12TranslationLayer::ImmediateContext& context = pDevice->GetImmediateContextNoFlush();
 
+        pDevice->GetAdapter()->m_Callbacks.RegisterHandleCreation(hResource, pCreateResource);
+
         D3D12TranslationLayer::ResourceCreationArgs createArgs = {};
 
         // The translation layer can only do residency management with a constrained amount of threads.
@@ -375,6 +377,10 @@ namespace D3D11On12
         D3D11on12_DDI_ENTRYPOINT_START();
         Resource* pResource = Resource::CastFrom(hResource);
         pResource->~Resource();
+
+        Device* pDevice = Device::CastFrom(hDevice);
+        pDevice->GetAdapter()->m_Callbacks.RegisterHandleDestruction(hResource);
+
         D3D11on12_DDI_ENTRYPOINT_END_AND_REPORT_HR(hDevice, S_OK);
     }
 

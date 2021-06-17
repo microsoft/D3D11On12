@@ -265,7 +265,7 @@ namespace D3D11On12
         args.RenamingIsMultithreaded = BatchedContextUseWorkerThread(CreateDeviceFlags);
         args.UseThreadpoolForPSOCreates = true;
         args.UseRoundTripPSOs = GetCompatValue("RoundTripPSOs", &roundTripPSOs) && roundTripPSOs;
-        args.UseResidencyManagement = true;
+        args.UseResidencyManagement = false;
         args.DisableGPUTimeout = pAdapter->m_bAPIDisablesGPUTimeout;
         args.IsXbox = IsXboxCreateFlags(CreateDeviceFlags);
 #ifdef __D3D11On12CreatorID_INTERFACE_DEFINED__
@@ -595,7 +595,14 @@ namespace D3D11On12
         m_pDDITable->pfnQueryScanoutCaps = QueryScanoutCaps;
         m_pDDITable->pfnPrepareScanoutTransformation = PrepareScanoutTransformation;
 
-        assert(pArgs->Interface == D3DWDDM2_7_DDI_INTERFACE_VERSION);
+        PopulateDeferredShaderInit(m_pDDITable->pfnCreateComputeShader);
+        PopulateDeferredShaderInit(m_pDDITable->pfnCreateVertexShader);
+        PopulateDeferredShaderInit(m_pDDITable->pfnCreatePixelShader);
+        PopulateDeferredShaderInit(m_pDDITable->pfnCreateGeometryShader);
+        PopulateDeferredShaderInit(m_pDDITable->pfnCreateDomainShader);
+        PopulateDeferredShaderInit(m_pDDITable->pfnCreateHullShader);
+
+        assert(pArgs->Interface == D3DWDDM2_7_DDI_INTERFACE_VERSION || pArgs->Interface == D3DWDDM2_6_DDI_INTERFACE_VERSION);
 
         m_pDXGITable->pfnBlt = Blt;
         m_pDXGITable->pfnBlt1 = Blt1;
@@ -609,16 +616,44 @@ namespace D3D11On12
         m_pDXGITable->pfnPresentMultiplaneOverlay1 = PresentMultiplaneOverlay1;
 
         // Not implemented (Handled by DXGIOn12)
-        m_pDXGITable->pfnPresent = nullptr;
-        m_pDXGITable->pfnCheckPresentDurationSupport = nullptr;
-        m_pDXGITable->pfnGetGammaCaps = nullptr;
-        m_pDXGITable->pfnGetMultiplaneOverlayCaps = nullptr;
-        m_pDXGITable->pfnGetMultiplaneOverlayGroupCaps = nullptr;
-        m_pDXGITable->pfnOfferResources1 = nullptr;
-        m_pDXGITable->pfnReclaimResources = nullptr;
-        m_pDXGITable->pfnPresentMultiplaneOverlay = nullptr;
-        m_pDXGITable->pfnQueryResourceResidency = nullptr;
-        m_pDXGITable->pfnSetDisplayMode = nullptr;
+        m_pDXGITable->pfnPresent = [](DXGI_DDI_ARG_PRESENT*) -> HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnCheckPresentDurationSupport = [](DXGI_DDI_ARG_CHECKPRESENTDURATIONSUPPORT*) -> HRESULT {
+            return E_FAIL;
+        };
+        m_pDXGITable->pfnGetGammaCaps = [](DXGI_DDI_ARG_GET_GAMMA_CONTROL_CAPS*) -> HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnGetMultiplaneOverlayCaps = [](DXGI_DDI_ARG_GETMULTIPLANEOVERLAYCAPS*)->HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnGetMultiplaneOverlayGroupCaps = [](DXGI_DDI_ARG_GETMULTIPLANEOVERLAYGROUPCAPS*)->HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnOfferResources1 = [](DXGI_DDI_ARG_OFFERRESOURCES1*)->HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnReclaimResources = [](DXGI_DDI_ARG_RECLAIMRESOURCES*)->HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnPresentMultiplaneOverlay = [](DXGI_DDI_ARG_PRESENTMULTIPLANEOVERLAY*)->HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnQueryResourceResidency = [](DXGI_DDI_ARG_QUERYRESOURCERESIDENCY*)->HRESULT {
+            return E_FAIL;
+        };
+
+        m_pDXGITable->pfnSetDisplayMode = [](DXGI_DDI_ARG_SETDISPLAYMODE*)->HRESULT {
+            return E_FAIL;
+        };
 
         *pArgs->ppfnRetrieveSubObject = RetrieveSubObject;
     }
@@ -1312,21 +1347,23 @@ namespace D3D11On12
     STDMETHODIMP_(void) DeviceBase::SetMarker(_In_opt_z_ const wchar_t* name) noexcept
     {
         D3D11on12_DDI_ENTRYPOINT_START();
-        GetBatchedContext().SetMarker(name);
+        name;
+        //GetBatchedContext().SetMarker(name);
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
         assert(SUCCEEDED(EntryPointHr));
     }
     STDMETHODIMP_(void) DeviceBase::BeginEvent(_In_opt_z_ const wchar_t* name) noexcept
     {
         D3D11on12_DDI_ENTRYPOINT_START();
-        GetBatchedContext().BeginEvent(name);
+        name;
+        //GetBatchedContext().BeginEvent(name);
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
         assert(SUCCEEDED(EntryPointHr));
     }
     STDMETHODIMP_(void) DeviceBase::EndEvent() noexcept
     {
         D3D11on12_DDI_ENTRYPOINT_START();
-        GetBatchedContext().EndEvent();
+        //GetBatchedContext().EndEvent();
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
         assert(SUCCEEDED(EntryPointHr));
     }

@@ -35,6 +35,8 @@ struct ResourceInfo
 
 struct PrivateCallbacks
 {
+    void (CALLBACK* RegisterHandleCreation)(_In_ D3D10DDI_HRESOURCE, _In_ CONST D3D11DDIARG_CREATERESOURCE*);
+    void (CALLBACK* RegisterHandleDestruction)(_In_ D3D10DDI_HRESOURCE);
     D3D11_RESOURCE_FLAGS (CALLBACK *GetResourceFlags)(_In_ D3D10DDI_HRESOURCE, _Out_ bool *pbAcquireableOnWrite);
     bool (CALLBACK *NotifySharedResourceCreation)(_In_ HANDLE, _In_ IUnknown*);
 };

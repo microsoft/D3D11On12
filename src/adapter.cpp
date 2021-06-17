@@ -13,6 +13,175 @@ HRESULT WINAPI OpenAdapter_D3D11On12(_Inout_ D3D10DDIARG_OPENADAPTER* pArgs, _In
     catch (std::bad_alloc&) { return E_OUTOFMEMORY; }
 }
 
+static std::mutex s_ResourceCreationArgsMutex;
+static std::unordered_map<void*, D3D11DDIARG_CREATERESOURCE> s_ResourceCreationArgs{};
+
+static void RegisterHandleCreationForD3D12(_In_ D3D10DDI_HRESOURCE hResource, _In_ CONST D3D11DDIARG_CREATERESOURCE* createArgs)
+{
+    std::lock_guard<decltype(s_ResourceCreationArgsMutex)> lg(s_ResourceCreationArgsMutex);
+
+    s_ResourceCreationArgs.emplace(hResource.pDrvPrivate, *createArgs);
+}
+void RegisterHandleDestructionForD3D12(_In_ D3D10DDI_HRESOURCE hResource)
+{
+    std::lock_guard<decltype(s_ResourceCreationArgsMutex)> lg(s_ResourceCreationArgsMutex);
+
+    auto it = s_ResourceCreationArgs.find(hResource.pDrvPrivate);
+    assert(it != s_ResourceCreationArgs.end());
+
+    s_ResourceCreationArgs.erase(it);
+}
+
+static D3D11_RESOURCE_FLAGS GetResourceFlagsForD3D12(_In_ D3D10DDI_HRESOURCE hResource, _Out_ bool* pbAcquireableOnWrite)
+{
+    std::lock_guard<decltype(s_ResourceCreationArgsMutex)> lg(s_ResourceCreationArgsMutex);
+
+    auto it = s_ResourceCreationArgs.find(hResource.pDrvPrivate);
+    assert(it != s_ResourceCreationArgs.end());
+
+    CONST D3D11DDIARG_CREATERESOURCE* createArgs = &it->second;
+
+    D3D11_RESOURCE_FLAGS flags{};
+    *pbAcquireableOnWrite = true;
+    if ((createArgs->MapFlags & D3D10_DDI_MAP_READWRITE) != 0)
+    {
+        flags.CPUAccessFlags |= (D3D11_CPU_ACCESS_WRITE | D3D11_CPU_ACCESS_READ);
+    }
+    
+    if ((createArgs->MapFlags & (D3D10_DDI_MAP_WRITE | D3D10_DDI_MAP_WRITE_DISCARD | D3D10_DDI_MAP_WRITE_NOOVERWRITE)) != 0)
+    {
+        flags.CPUAccessFlags |= D3D11_CPU_ACCESS_WRITE;
+    }
+    
+    if ((createArgs->MapFlags & D3D10_DDI_MAP_READ) != 0)
+    {
+        flags.CPUAccessFlags |= D3D11_CPU_ACCESS_READ;
+    }
+
+    if ((createArgs->MiscFlags & D3D10_DDI_RESOURCE_MISC_SHARED) != 0)
+    {
+        flags.MiscFlags |= D3D10_RESOURCE_MISC_SHARED;
+    }
+
+    if ((createArgs->MiscFlags & D3D10_DDI_RESOURCE_AUTO_GEN_MIP_MAP) != 0)
+    {
+        flags.MiscFlags |= D3D10_RESOURCE_MISC_GENERATE_MIPS;
+    }
+
+    if ((createArgs->BindFlags & D3D10_DDI_BIND_RENDER_TARGET) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_RENDER_TARGET;
+    }
+
+    if ((createArgs->BindFlags & D3D10_DDI_BIND_CONSTANT_BUFFER) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_CONSTANT_BUFFER;
+    }
+
+    if ((createArgs->BindFlags & D3D10_DDI_BIND_DEPTH_STENCIL) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_DEPTH_STENCIL;
+    }
+
+    if ((createArgs->BindFlags & D3D10_DDI_BIND_INDEX_BUFFER) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_INDEX_BUFFER;
+    }
+
+    if ((createArgs->BindFlags & D3D10_DDI_BIND_SHADER_RESOURCE) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_SHADER_RESOURCE;
+    }
+
+    if ((createArgs->BindFlags & D3D10_DDI_BIND_VERTEX_BUFFER) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_VERTEX_BUFFER;
+    }
+
+    if ((createArgs->BindFlags & D3D11_DDI_BIND_UNORDERED_ACCESS) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+    }
+
+    if ((createArgs->BindFlags & D3D10_DDI_BIND_STREAM_OUTPUT) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_STREAM_OUTPUT;
+    }
+
+    if ((createArgs->BindFlags & D3D11_DDI_BIND_DECODER) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_DECODER;
+    }
+
+    if ((createArgs->BindFlags & D3D11_DDI_BIND_VIDEO_ENCODER) != 0)
+    {
+        flags.BindFlags |= D3D11_BIND_VIDEO_ENCODER;
+    }
+
+    return flags;
+}
+
+static bool NotifySharedResourceCreationForD3D12(_In_ HANDLE, _In_ IUnknown*)
+{
+    return true;
+}
+
+static BOOL IsProcessDWM()
+{
+    BOOL result = FALSE;
+    SID_IDENTIFIER_AUTHORITY identifierAuthority{};
+    *(unsigned int*)(identifierAuthority.Value + 0) = 0;
+    *(unsigned short*)(identifierAuthority.Value + 4) = 0x500;
+    PSID psid;
+    if (TRUE == AllocateAndInitializeSid(&identifierAuthority, 2, 0x5A, 0, 0, 0, 0, 0, 0, 0, &psid))
+    {
+        BOOL isMember = FALSE;
+        if (TRUE == CheckTokenMembership(nullptr, psid, &isMember))
+        {
+            result = isMember;
+        }
+        FreeSid(psid);
+    }
+    return result;
+}
+
+HRESULT WINAPI OpenAdapter10_2(_Inout_ D3D10DDIARG_OPENADAPTER* pArgs)
+{
+    D3D11On12::SOpenAdapterArgs args{};
+
+    CComPtr<IDXGIFactory4> factory;
+    ThrowFailure(CreateDXGIFactory1(IID_PPV_ARGS(&factory)));
+
+    CComPtr<IDXGIAdapter> warpAdapter;
+    ThrowFailure(factory->EnumWarpAdapter(IID_PPV_ARGS(&warpAdapter)));
+
+    CComPtr<ID3D12Debug> debugController;
+    if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
+    {
+        debugController->EnableDebugLayer();
+    }
+
+    ThrowFailure(D3D12CreateDevice(
+        warpAdapter,
+        D3D_FEATURE_LEVEL_11_0,
+        IID_PPV_ARGS(&args.pDevice)
+    ));
+
+    D3D12_COMMAND_QUEUE_DESC queueDesc = {};
+    queueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+    queueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+
+    ThrowFailure(args.pDevice->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&args.p3DCommandQueue)));
+    args.pAdapter = warpAdapter;
+
+    args.Callbacks.RegisterHandleCreation = RegisterHandleCreationForD3D12;
+    args.Callbacks.RegisterHandleDestruction = RegisterHandleDestructionForD3D12;
+    args.Callbacks.GetResourceFlags = GetResourceFlagsForD3D12;
+    args.Callbacks.NotifySharedResourceCreation = NotifySharedResourceCreationForD3D12;
+
+    return OpenAdapter_D3D11On12(pArgs, &args);
+}
+
 namespace D3D11On12
 {
     //----------------------------------------------------------------------------------------------------------------------------------
@@ -39,12 +208,8 @@ namespace D3D11On12
     
         m_Architecture.NodeIndex = m_NodeIndex;
 
-        if (!m_pUnderlyingDevice)
-        {
-            assert(Args.pAdapter != nullptr);
-            ThrowFailure(D3D12CreateDevice(Args.pAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_pUnderlyingDevice)));
-        }
-    
+        assert(m_pUnderlyingDevice);
+   
         HRESULT hr = m_pUnderlyingDevice->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &m_Architecture, sizeof(m_Architecture));
         assert(SUCCEEDED(hr));
     
@@ -372,8 +537,7 @@ namespace D3D11On12
             }
     
             default:
-                assert(false);
-                return E_INVALIDARG;
+                return E_FAIL;
         }
         return hr;
     }
