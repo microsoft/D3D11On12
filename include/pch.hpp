@@ -2,12 +2,10 @@
 // Licensed under the MIT License.
 #pragma once
 
-#define NOMINMAX
-#include <windows.h>
-#include <d3dx11on12.h>
-
 #include <D3D12TranslationLayerDependencyIncludes.h>
 #include <D3D12TranslationLayerIncludes.h>
+
+#include <d3dx11on12.h>
 
 #include "SharedResourceHelpers.hpp"
 
