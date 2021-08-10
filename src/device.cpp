@@ -146,10 +146,20 @@ namespace D3D11On12
     //----------------------------------------------------------------------------------------------------------------------------------
     HRESULT Device::EnsureVideoDevice()
     {
-        if (!m_pVideoDevice)
+        try
         {
-            m_pVideoDevice.reset(new VideoDevice(*this));
-            m_pVideoDevice->Initialize();
+            if (!m_pVideoDevice)
+            {
+                m_pVideoDevice.reset(new VideoDevice(*this));
+                m_pVideoDevice->Initialize();
+            }
+        }
+        catch (_com_error& hrEx)
+        {
+            // If Initialize() failed, we need to cleanup the D3D11On12 object that's badly initialized
+            m_pVideoDevice = nullptr;
+
+            return hrEx.Error();
         }
 
         return S_OK;
