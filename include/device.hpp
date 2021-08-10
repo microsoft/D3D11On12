@@ -420,7 +420,7 @@ namespace D3D11On12
         /* End DDI Entry points*/
 
         VideoDevice *GetVideoDevice();
-        virtual HRESULT EnsureVideoDevice();
+        virtual void EnsureVideoDevice();
 
         D3D12TranslationLayer::ResourceAllocationContext GetResourceAllocationContext() const noexcept { return m_ResourceAllocationContext; }
         D3D10DDI_HRTDEVICE GetRTDeviceHandle() const { return m_hRTDevice; }

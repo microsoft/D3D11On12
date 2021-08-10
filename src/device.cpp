@@ -144,7 +144,7 @@ namespace D3D11On12
     }
 
     //----------------------------------------------------------------------------------------------------------------------------------
-    HRESULT Device::EnsureVideoDevice()
+    void Device::EnsureVideoDevice()
     {
         try
         {
@@ -154,15 +154,11 @@ namespace D3D11On12
                 m_pVideoDevice->Initialize();
             }
         }
-        catch (_com_error& hrEx)
+        catch (...)
         {
-            // If Initialize() failed, we need to cleanup the D3D11On12 object that's badly initialized
             m_pVideoDevice = nullptr;
-
-            return hrEx.Error();
+            throw;
         }
-
-        return S_OK;
     }
 
     //----------------------------------------------------------------------------------------------------------------------------------
@@ -196,12 +192,9 @@ namespace D3D11On12
         else
         {
             D3DWDDM2_4DDI_VIDEO_INPUT *pInput = static_cast<D3DWDDM2_4DDI_VIDEO_INPUT *>(pParams);
-            hr = pDevice->EnsureVideoDevice();
-            if (SUCCEEDED(hr))
-            {
-                VideoDevice *pVideoDevice = pDevice->GetVideoDevice();
-                pVideoDevice->FillVideoDDIFunctions(pInput->pWDDM2_4VideoDeviceFuncs);
-            }
+            pDevice->EnsureVideoDevice();
+            VideoDevice *pVideoDevice = pDevice->GetVideoDevice();
+            pVideoDevice->FillVideoDDIFunctions(pInput->pWDDM2_4VideoDeviceFuncs);
         }
         
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
