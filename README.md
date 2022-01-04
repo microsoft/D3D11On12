@@ -40,6 +40,9 @@ At the time of publishing, the D3D11On12 and D3D12TranslationLayer require **ins
 
 D3D11On12 requires C++17, and only supports building with MSVC at the moment.
 
+### Troubleshoot building
+A somewhat common issue when trying to build the mapping layers is that there are multiple Windows SDKs installed, but only a subset of them has a corresponding WDK also installed. You can specify which version of the SDK to use when generating the solution by adding the following to your cmake command: `-DCMAKE_SYSTEM_VERSION=<SDK_VERSION>`.
+
 ## Why open source?
 
 The D3D11On12 mapping layer is included as an operating system component of Windows 10. Over the years and Windows 10 releases, it has grown in functionality, to the point where it is a complete and relatively performant implementation of a D3D11 driver. We are choosing to release the source to this component for two primary reasons:
