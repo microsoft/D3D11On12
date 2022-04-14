@@ -69,7 +69,6 @@ namespace D3D11On12
         static SIZE_T TRANSLATION_API CalcPrivateSize(const UINT*, const TSignatures*);
         static void Create(Device* pDevice, THandle, const TDesc*) noexcept(false);
 
-        static void PatchShaderFeatureFlags(std::unique_ptr<BYTE[]>& spBytecode, SIZE_T& bytecodeSize) noexcept(false);
         void ParseInputSemantics() noexcept(false);
         void ParseOutputSemantics() noexcept(false);
 
