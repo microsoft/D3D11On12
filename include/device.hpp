@@ -473,6 +473,12 @@ namespace D3D11On12
         PresentExtension m_PresentExt = { this };
         std::mutex m_SwapChainManagerMutex;
         std::shared_ptr<D3D12TranslationLayer::SwapChainManager> m_SwapChainManager;
+
+        struct SyncTokenExtensionData
+        {
+            HANDLE hSyncToken;
+            ID3D11On12DDIResource* sharingContractPresentResource;
+        };
         struct SyncTokenExtension : D3D12TranslationLayer::BatchedExtension
         {
             Device* const m_Device;
@@ -482,9 +488,14 @@ namespace D3D11On12
             void Dispatch(D3D12TranslationLayer::ImmediateContext& ImmCtx, const void* pData, size_t) final
             {
                 ImmCtx.Flush(D3D12TranslationLayer::COMMAND_LIST_TYPE_ALL_MASK);
+                SyncTokenExtensionData data = *reinterpret_cast<SyncTokenExtensionData const*>(pData);
                 D3DDDICB_SYNCTOKEN SyncTokenCB = {};
-                SyncTokenCB.hSyncToken = *reinterpret_cast<HANDLE const*>(pData);
+                SyncTokenCB.hSyncToken = data.hSyncToken;
                 (m_Device->m_pKTCallbacks->*m_pCallback)(m_Device->m_hRTDevice.handle, &SyncTokenCB);
+                if (data.sharingContractPresentResource)
+                {
+                    m_Device->SharingContractPresent(data.sharingContractPresentResource);
+                }
             }
         };
         SyncTokenExtension m_AcquireResourceExt = { this, &D3DDDI_DEVICECALLBACKS::pfnAcquireResourceCb };
