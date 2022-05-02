@@ -227,13 +227,20 @@ namespace D3D11On12
     void Device::AcquireResource(D3D10DDI_HDEVICE hDevice, D3D10DDI_HRESOURCE, HANDLE hSyncToken) noexcept
     {
         auto pThis = CastFrom(hDevice);
-        pThis->GetBatchedContext().BatchExtension(&pThis->m_AcquireResourceExt, hSyncToken);
+        SyncTokenExtensionData data;
+        data.hSyncToken = hSyncToken;
+        data.sharingContractPresentResource = nullptr;
+        pThis->GetBatchedContext().BatchExtension(&pThis->m_AcquireResourceExt, data);
     }
 
-    void Device::ReleaseResource(D3D10DDI_HDEVICE hDevice, D3D10DDI_HRESOURCE, HANDLE hSyncToken) noexcept
+    void Device::ReleaseResource(D3D10DDI_HDEVICE hDevice, D3D10DDI_HRESOURCE resource, HANDLE hSyncToken) noexcept
     {
         auto pThis = CastFrom(hDevice);
-        pThis->GetBatchedContext().BatchExtension(&pThis->m_ReleaseResourceExt, hSyncToken);
+        ID3D11On12DDIResource* d3d11on12DDIResource = ID3D11On12DDIResource::CastFrom(resource);
+        SyncTokenExtensionData data;
+        data.hSyncToken = hSyncToken;
+        data.sharingContractPresentResource = d3d11on12DDIResource;
+        pThis->GetBatchedContext().BatchExtension(&pThis->m_ReleaseResourceExt, data);
         pThis->GetBatchedContext().SubmitBatch();
     }
 
