@@ -30,6 +30,19 @@ namespace D3D11On12
         ThrowFailure(m_Device->m_pDXGICallbacks->pfnPresentCb(m_Device->m_hRTDevice.handle, &CBArgs));
     }
 
+    void Device::SyncTokenExtension::Dispatch(D3D12TranslationLayer::ImmediateContext& ImmCtx, const void* pData, size_t)
+    {
+        ImmCtx.Flush(D3D12TranslationLayer::COMMAND_LIST_TYPE_ALL_MASK);
+        SyncTokenExtensionData data = *reinterpret_cast<SyncTokenExtensionData const*>(pData);
+        D3DDDICB_SYNCTOKEN SyncTokenCB = {};
+        SyncTokenCB.hSyncToken = data.hSyncToken;
+        (m_Device->m_pKTCallbacks->*m_pCallback)(m_Device->m_hRTDevice.handle, &SyncTokenCB);
+        if (data.sharingContractPresentResource)
+        {
+            m_Device->GetImmediateContextNoFlush().SharingContractPresent(data.sharingContractPresentResource->ImmediateResource());
+        }
+    }
+
     HRESULT APIENTRY Device::Blt(DXGI_DDI_ARG_BLT* pArgs)
     {
         D3D11on12_DDI_ENTRYPOINT_START();
@@ -236,7 +249,7 @@ namespace D3D11On12
     void Device::ReleaseResource(D3D10DDI_HDEVICE hDevice, D3D10DDI_HRESOURCE resource, HANDLE hSyncToken) noexcept
     {
         auto pThis = CastFrom(hDevice);
-        ID3D11On12DDIResource* d3d11on12DDIResource = ID3D11On12DDIResource::CastFrom(resource);
+        Resource* d3d11on12DDIResource = Resource::CastFrom(resource);
         SyncTokenExtensionData data;
         data.hSyncToken = hSyncToken;
         data.sharingContractPresentResource = d3d11on12DDIResource;
