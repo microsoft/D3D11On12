@@ -1333,6 +1333,4 @@ namespace D3D11On12
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
         assert(SUCCEEDED(EntryPointHr));
     }
-
-
 };

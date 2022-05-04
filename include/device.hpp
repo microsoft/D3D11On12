@@ -477,7 +477,7 @@ namespace D3D11On12
         struct SyncTokenExtensionData
         {
             HANDLE hSyncToken;
-            ID3D11On12DDIResource* sharingContractPresentResource;
+            Resource* sharingContractPresentResource;
         };
         struct SyncTokenExtension : D3D12TranslationLayer::BatchedExtension
         {
@@ -485,18 +485,7 @@ namespace D3D11On12
             PFND3DDDI_SYNCTOKENCB D3DDDI_DEVICECALLBACKS::* const m_pCallback;
             SyncTokenExtension(Device* pD, PFND3DDDI_SYNCTOKENCB D3DDDI_DEVICECALLBACKS::* pCB)
                 : m_Device(pD), m_pCallback(pCB) { }
-            void Dispatch(D3D12TranslationLayer::ImmediateContext& ImmCtx, const void* pData, size_t) final
-            {
-                ImmCtx.Flush(D3D12TranslationLayer::COMMAND_LIST_TYPE_ALL_MASK);
-                SyncTokenExtensionData data = *reinterpret_cast<SyncTokenExtensionData const*>(pData);
-                D3DDDICB_SYNCTOKEN SyncTokenCB = {};
-                SyncTokenCB.hSyncToken = data.hSyncToken;
-                (m_Device->m_pKTCallbacks->*m_pCallback)(m_Device->m_hRTDevice.handle, &SyncTokenCB);
-                if (data.sharingContractPresentResource)
-                {
-                    m_Device->SharingContractPresent(data.sharingContractPresentResource);
-                }
-            }
+            void Dispatch(D3D12TranslationLayer::ImmediateContext& ImmCtx, const void* pData, size_t) final;
         };
         SyncTokenExtension m_AcquireResourceExt = { this, &D3DDDI_DEVICECALLBACKS::pfnAcquireResourceCb };
         SyncTokenExtension m_ReleaseResourceExt = { this, &D3DDDI_DEVICECALLBACKS::pfnReleaseResourceCb };
