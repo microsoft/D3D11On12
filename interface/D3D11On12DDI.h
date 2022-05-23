@@ -163,4 +163,5 @@ interface ID3D11On12DDIDevice
 };
 
 extern "C" HRESULT WINAPI OpenAdapter_D3D11On12(_Inout_ D3D10DDIARG_OPENADAPTER* pArgs, _Inout_ D3D11On12::SOpenAdapterArgs* pArgs2);
+typedef HRESULT(APIENTRY* PFND3D11ON12_OPENADAPTER)(_Inout_ D3D10DDIARG_OPENADAPTER* pArgs, _Inout_ D3D11On12::SOpenAdapterArgs* pArgs2);
 
