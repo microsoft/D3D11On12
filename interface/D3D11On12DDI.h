@@ -2,6 +2,9 @@
 // Licensed under the MIT License.
 #pragma once
 
+
+interface ID3D11On12DDIResource;
+
 namespace D3D11On12
 {
 enum ResourceInfoType
@@ -33,13 +36,36 @@ struct ResourceInfo
     HANDLE m_GDIHandle;
 };
 
+struct PresentSurface
+{
+    PresentSurface() : m_pResource(nullptr), m_subresource(0) {}
+    PresentSurface(ID3D12Resource* pResource, UINT subresource = 0) : m_pResource(pResource), m_subresource(subresource) {}
+
+    ID3D12Resource* m_pResource;
+    UINT m_subresource;
+};
+
+struct Present11On12CBArgs
+{
+    _In_ ID3D12CommandQueue* pGraphicsCommandQueue;
+    _In_ ID3D12CommandList* pGraphicsCommandList;
+    _In_reads_(numSrcSurfaces) const PresentSurface* pSrcSurfaces;
+    UINT numSrcSurfaces;
+    _In_opt_ ID3D11On12DDIResource* pDest;
+    _Bitfield_(DXGI_PRESENT_FLAG) UINT flags;
+    UINT flipInterval;
+    UINT vidPnSourceId;
+    _In_ D3DKMT_PRESENT* pKMTPresent;
+};
+
 struct PrivateCallbacks
 {
     D3D11_RESOURCE_FLAGS (CALLBACK *GetResourceFlags)(_In_ D3D10DDI_HRESOURCE, _Out_ bool *pbAcquireableOnWrite);
     bool (CALLBACK *NotifySharedResourceCreation)(_In_ HANDLE, _In_ IUnknown*);
+    HRESULT(CALLBACK *Present11On12CB)(_In_ HANDLE, _In_ Present11On12CBArgs*);
 };
 
-constexpr UINT c_CurrentD3D11On12InterfaceVersion = 5;
+constexpr UINT c_CurrentD3D11On12InterfaceVersion = 6;
 
 struct SOpenAdapterArgs
 {
@@ -160,6 +186,9 @@ interface ID3D11On12DDIDevice
     // Entries beyond this point only valid when D3D11On12InterfaceVersion >= 4
     STDMETHOD_(void, SetMaximumFrameLatency)(UINT MaxFrameLatency) = 0;
     STDMETHOD_(bool, IsMaximumFrameLatencyReached)() = 0;
+
+    // Entries beyond this point only valid when D3D11On12InterfaceVersion >= 6
+    STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL commandsAdded, _In_reads_(numSrcSurfaces) const D3D11On12::PresentSurface* pSrcSurfaces, UINT numSrcSurfaces, _In_opt_ ID3D11On12DDIResource* pDest, _In_ D3DKMT_PRESENT* pKMTPresent) = 0;
 };
 
 extern "C" HRESULT WINAPI OpenAdapter_D3D11On12(_Inout_ D3D10DDIARG_OPENADAPTER* pArgs, _Inout_ D3D11On12::SOpenAdapterArgs* pArgs2);
