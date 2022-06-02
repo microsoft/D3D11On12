@@ -271,7 +271,7 @@ namespace D3D11On12
         }
 
         // Returns true if synchronization was successful, false likely means device is removed
-        bool WaitForCompletion(D3D12TranslationLayer::COMMAND_LIST_TYPE commandListType) // Can't be marked as noexcept as it throws
+        bool WaitForCompletion(D3D12TranslationLayer::COMMAND_LIST_TYPE commandListType)
         {
             return FlushBatchAndGetImmediateContext().WaitForCompletion(commandListType); // throws
         }
