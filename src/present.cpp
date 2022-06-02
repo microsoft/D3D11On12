@@ -11,15 +11,34 @@ namespace D3D11On12
         Device *pDevice = Device::CastFrom(pArgs->hDevice);
 
         assert(pArgs->pDirtyRects == nullptr && pArgs->DirtyRects == 0);
-        PresentExtensionData ExtensionData{ };
-        if (pArgs->SurfacesToPresent)
-        {
-            ExtensionData.pSrc = Resource::CastFrom(pArgs->phSurfacesToPresent[0].hSurface);
-            ExtensionData.pDXGIContext = pArgs->pDXGIContext;
-        }
-        pDevice->GetBatchedContext().BatchExtension(&pDevice->m_PresentExt, ExtensionData);
+        
+        pDevice->GetBatchedContext().EmplaceBatchExtension<PresentExtensionData>(&pDevice->m_PresentExt, pArgs);
         pDevice->GetBatchedContext().SubmitBatch();
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(S_OK);
+    }
+
+    Device::PresentExtensionData::PresentExtensionData(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs)
+        : SrcSurfaceCount(pArgs->SurfacesToPresent)
+        , FlipInterval(pArgs->FlipInterval)
+        , pDest(Resource::CastFrom(pArgs->hDstResource))
+        , pDXGIContext(pArgs->pDXGIContext)
+        , VidPnSourceId(D3DDDI_ID_UNINITIALIZED)
+    {
+        auto pSrcSurfaces = GetPresentSurfaces();
+        for (UINT i = 0; i < SrcSurfaceCount; ++i)
+        {
+            pSrcSurfaces[i].m_pResource = Resource::CastFromAndGetImmediateResource(pArgs->phSurfacesToPresent[i].hSurface);
+            pSrcSurfaces[i].m_subresource = pArgs->phSurfacesToPresent[i].SubResourceIndex;
+        }
+        if (SrcSurfaceCount > 0)
+        {
+            VidPnSourceId = Resource::CastFrom(pArgs->phSurfacesToPresent[0].hSurface)->m_VidPnSourceId;
+        }
+    }
+
+    size_t Device::PresentExtensionData::GetExtensionSize(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs)
+    {
+        return sizeof(PresentExtensionData) + sizeof(D3D12TranslationLayer::PresentSurface) * pArgs->SurfacesToPresent;
     }
 
     void Device::PresentExtension::Dispatch(D3D12TranslationLayer::ImmediateContext&, const void* pData, size_t)
@@ -202,11 +221,12 @@ namespace D3D11On12
             m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(GetImmediateContextNoFlush());
         }
 
-        auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pArgs->pSrc->ImmediateResource());
+        D3D12TranslationLayer::Resource* pSrc = pArgs->GetPresentSurfaces()[0].m_pResource;
+        auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pSrc);
         auto swapChainHelper = D3D12TranslationLayer::SwapChainHelper( pSwapChain );
         m_SwapChainManager->WaitForMaximumFrameLatency();
 
-        HRESULT hr = swapChainHelper.StandardPresent( GetImmediateContextNoFlush(), pKMTPresent, *pArgs->pSrc->ImmediateResource() );
+        HRESULT hr = swapChainHelper.StandardPresent( GetImmediateContextNoFlush(), pKMTPresent, *pSrc);
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 

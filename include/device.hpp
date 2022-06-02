@@ -460,8 +460,16 @@ namespace D3D11On12
 
         struct PresentExtensionData
         {
-            Resource* pSrc;
+            UINT SrcSurfaceCount;
+            UINT FlipInterval;
+            Resource* pDest;
             void* pDXGIContext;
+            UINT VidPnSourceId;
+            PresentExtensionData(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs);
+            static size_t GetExtensionSize(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs);
+            // Followed by D3D12TranslationLayer::PresentSurface[SrcSurfaceCount]
+            D3D12TranslationLayer::PresentSurface* GetPresentSurfaces() { return reinterpret_cast<D3D12TranslationLayer::PresentSurface*>(this + 1); }
+            D3D12TranslationLayer::PresentSurface const* GetPresentSurfaces() const { return reinterpret_cast<D3D12TranslationLayer::PresentSurface const*>(this + 1); }
         };
         PresentExtensionData const* m_pPresentArgs;
 
