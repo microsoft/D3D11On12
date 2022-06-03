@@ -216,17 +216,18 @@ namespace D3D11On12
         m_pPresentArgs = nullptr;
         
         std::lock_guard lock(m_SwapChainManagerMutex);
+        D3D12TranslationLayer::ImmediateContext& immCtx = GetImmediateContextNoFlush();
         if (!m_SwapChainManager)
         {
-            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(GetImmediateContextNoFlush());
+            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(immCtx);
         }
 
         D3D12TranslationLayer::Resource* pSrc = pArgs->GetPresentSurfaces()[0].m_pResource;
         auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pSrc);
         auto swapChainHelper = D3D12TranslationLayer::SwapChainHelper( pSwapChain );
-        m_SwapChainManager->WaitForMaximumFrameLatency();
+        immCtx.m_MaxFrameLatencyHelper.WaitForMaximumFrameLatency();
 
-        HRESULT hr = swapChainHelper.StandardPresent( GetImmediateContextNoFlush(), pKMTPresent, *pSrc);
+        HRESULT hr = swapChainHelper.StandardPresent( immCtx, pKMTPresent, *pSrc);
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 
@@ -239,7 +240,7 @@ namespace D3D11On12
         {
             m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(GetImmediateContextNoFlush());
         }
-        m_SwapChainManager->SetMaximumFrameLatency(MaxFrameLatency);
+        GetImmediateContextNoFlush().m_MaxFrameLatencyHelper.SetMaximumFrameLatency(MaxFrameLatency);
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
     }
 
@@ -248,11 +249,12 @@ namespace D3D11On12
         bool ret = false;
         D3D11on12_DDI_ENTRYPOINT_START();
         std::lock_guard lock(m_SwapChainManagerMutex);
+        D3D12TranslationLayer::ImmediateContext& immCtx = GetImmediateContextNoFlush();
         if (!m_SwapChainManager)
         {
-            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(GetImmediateContextNoFlush());
+            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(immCtx);
         }
-        ret = m_SwapChainManager->IsMaximumFrameLatencyReached();
+        ret = immCtx.m_MaxFrameLatencyHelper.IsMaximumFrameLatencyReached();
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
         return ret;
     }
