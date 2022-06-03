@@ -39,9 +39,9 @@ struct ResourceInfo
 struct PresentSurface
 {
     PresentSurface() : m_pResource(nullptr), m_subresource(0) {}
-    PresentSurface(ID3D12Resource* pResource, UINT subresource = 0) : m_pResource(pResource), m_subresource(subresource) {}
+    PresentSurface(ID3D11On12DDIResource* pResource, UINT subresource = 0) : m_pResource(pResource), m_subresource(subresource) {}
 
-    ID3D12Resource* m_pResource;
+    ID3D11On12DDIResource* m_pResource;
     UINT m_subresource;
 };
 
@@ -52,7 +52,6 @@ struct Present11On12CBArgs
     _In_reads_(numSrcSurfaces) const PresentSurface* pSrcSurfaces;
     UINT numSrcSurfaces;
     _In_opt_ ID3D11On12DDIResource* pDest;
-    _Bitfield_(DXGI_PRESENT_FLAG) UINT flags;
     UINT flipInterval;
     UINT vidPnSourceId;
     _In_ D3DKMT_PRESENT* pKMTPresent;

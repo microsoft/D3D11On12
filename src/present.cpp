@@ -24,10 +24,10 @@ namespace D3D11On12
         , pDXGIContext(pArgs->pDXGIContext)
         , VidPnSourceId(D3DDDI_ID_UNINITIALIZED)
     {
-        auto pSrcSurfaces = GetPresentSurfaces();
+        PresentSurface* pSrcSurfaces = GetPresentSurfaces();
         for (UINT i = 0; i < SrcSurfaceCount; ++i)
         {
-            pSrcSurfaces[i].m_pResource = Resource::CastFromAndGetImmediateResource(pArgs->phSurfacesToPresent[i].hSurface);
+            pSrcSurfaces[i].m_pResource = Resource::CastFrom(pArgs->phSurfacesToPresent[i].hSurface);
             pSrcSurfaces[i].m_subresource = pArgs->phSurfacesToPresent[i].SubResourceIndex;
         }
         if (SrcSurfaceCount > 0)
@@ -46,7 +46,7 @@ namespace D3D11On12
         m_Device->m_pPresentArgs = reinterpret_cast<PresentExtensionData const*>(pData);
         DXGIDDICB_PRESENT CBArgs = {};
         CBArgs.pDXGIContext = m_Device->m_pPresentArgs->pDXGIContext;
-        ThrowFailure(m_Device->m_pDXGICallbacks->pfnPresentCb(m_Device->m_hRTDevice.handle, &CBArgs));
+        ThrowFailure((*m_Device->m_pDXGICallbacks->pfnPresentCb)(m_Device->m_hRTDevice.handle, &CBArgs));
     }
 
     void Device::SyncTokenExtension::Dispatch(D3D12TranslationLayer::ImmediateContext& ImmCtx, const void* pData, size_t)
@@ -214,20 +214,88 @@ namespace D3D11On12
         D3D11on12_DDI_ENTRYPOINT_START();
         auto pArgs = m_pPresentArgs;
         m_pPresentArgs = nullptr;
-        
-        std::lock_guard lock(m_SwapChainManagerMutex);
         D3D12TranslationLayer::ImmediateContext& immCtx = GetImmediateContextNoFlush();
-        if (!m_SwapChainManager)
+        HRESULT hr = E_FAIL;
+        if (GetAdapter()->m_Callbacks.Present11On12CB)
         {
-            m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(immCtx);
+            // There's a rather convoluted sequence of events here. Call order is as follows:
+            // 1. D3D12TranslationLayer::ImmediateContext::Present
+            // 2. D3D11On12 forwardToPresent11On12CB lambda (few lines below here)
+            // 3. D3D11::Present11On12CB
+            // 4. D3D11on12::Device::CloseAndSubmitGraphicsCommandListForPresent
+            // 6. D3D12TranslationLayer::ImediateContext::CloseAndSubmitGraphicsCommandListForPresent
+            // We also need to do some conversion between 11on12 and translationlayer resource types between boundaries
+            try
+            {
+                D3D12TranslationLayer::Resource* pDst = pArgs->pDest ? pArgs->pDest->ImmediateResource() : nullptr;
+
+                bool bDoNotSequence = pKMTPresent->Flags.FlipDoNotFlip
+                    || (pKMTPresent->Flags.RedirectedFlip
+                        && pKMTPresent->PresentHistoryToken.Model == D3DKMT_PM_REDIRECTED_FLIP
+                        && pKMTPresent->PresentHistoryToken.Token.Flip.Flags.IndependentFlipDoNotFlip);
+                
+                auto forwardToPresent11On12CB = [adapter=GetAdapter(), rtDeviceHandle=GetRTDeviceHandle().handle, pArgs]
+                (D3D12TranslationLayer::PresentCBArgs& args) {
+                    Present11On12CBArgs cbArgs = {};
+                    cbArgs.flipInterval = args.flipInterval;
+                    cbArgs.pSrcSurfaces = pArgs->GetPresentSurfaces();
+                    cbArgs.numSrcSurfaces = args.numSrcSurfaces;
+                    cbArgs.pDest = pArgs->pDest;
+                    cbArgs.pGraphicsCommandList = args.pGraphicsCommandList;
+                    cbArgs.pGraphicsCommandQueue = args.pGraphicsCommandQueue;
+                    cbArgs.pKMTPresent = args.pKMTPresent;
+                    cbArgs.vidPnSourceId = args.vidPnSourceId;
+                    return (*adapter->m_Callbacks.Present11On12CB)(rtDeviceHandle, &cbArgs);
+                };
+
+                m_d3d12tlPresentSurfaces.clear();
+                for (UINT i = 0; i < pArgs->SrcSurfaceCount; i++)
+                {
+                    auto presentSurface = pArgs->GetPresentSurfaces()[i];
+                    auto resource = static_cast<Resource*>(presentSurface.m_pResource);
+                    D3D12TranslationLayer::PresentSurface surface = D3D12TranslationLayer::PresentSurface(resource->ImmediateResource(), presentSurface.m_subresource);
+                    m_d3d12tlPresentSurfaces.push_back(surface);
+                }
+
+                immCtx.Present(
+                    m_d3d12tlPresentSurfaces.data(),
+                    pArgs->SrcSurfaceCount,
+                    pDst,
+                    pArgs->FlipInterval,
+                    pArgs->VidPnSourceId,
+                    pKMTPresent,
+                    bDoNotSequence,
+                    forwardToPresent11On12CB);
+                hr = S_OK;
+            }
+            catch (_com_error& hrEx)
+            {
+                hr = hrEx.Error();
+            }
+            catch (std::bad_alloc&)
+            {
+                hr = E_OUTOFMEMORY;
+            }
+            
         }
+        else
+        {
+            // fallback to old present path
+            std::lock_guard lock(m_SwapChainManagerMutex);
 
-        D3D12TranslationLayer::Resource* pSrc = pArgs->GetPresentSurfaces()[0].m_pResource;
-        auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pSrc);
-        auto swapChainHelper = D3D12TranslationLayer::SwapChainHelper( pSwapChain );
-        immCtx.m_MaxFrameLatencyHelper.WaitForMaximumFrameLatency();
+            if (!m_SwapChainManager)
+            {
+                m_SwapChainManager = std::make_shared<D3D12TranslationLayer::SwapChainManager>(immCtx);
+            }
+            auto resource = static_cast<Resource*>(pArgs->GetPresentSurfaces()[0].m_pResource);
+            D3D12TranslationLayer::Resource* pSrc = resource->ImmediateResource();
+            auto pSwapChain = m_SwapChainManager->GetSwapChainForWindow(pKMTPresent->hWindow, *pSrc);
+            auto swapChainHelper = D3D12TranslationLayer::SwapChainHelper(pSwapChain);
+            immCtx.m_MaxFrameLatencyHelper.WaitForMaximumFrameLatency();
 
-        HRESULT hr = swapChainHelper.StandardPresent( immCtx, pKMTPresent, *pSrc);
+            hr = swapChainHelper.StandardPresent(immCtx, pKMTPresent, *pSrc);
+        }
+        
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 

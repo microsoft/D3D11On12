@@ -467,9 +467,9 @@ namespace D3D11On12
             UINT VidPnSourceId;
             PresentExtensionData(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs);
             static size_t GetExtensionSize(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs);
-            // Followed by D3D12TranslationLayer::PresentSurface[SrcSurfaceCount]
-            D3D12TranslationLayer::PresentSurface* GetPresentSurfaces() { return reinterpret_cast<D3D12TranslationLayer::PresentSurface*>(this + 1); }
-            D3D12TranslationLayer::PresentSurface const* GetPresentSurfaces() const { return reinterpret_cast<D3D12TranslationLayer::PresentSurface const*>(this + 1); }
+            // Followed by PresentSurface[SrcSurfaceCount]
+            PresentSurface* GetPresentSurfaces() { return reinterpret_cast<PresentSurface*>(this + 1); }
+            PresentSurface const* GetPresentSurfaces() const { return reinterpret_cast<PresentSurface const*>(this + 1); }
         };
         PresentExtensionData const* m_pPresentArgs;
 
@@ -482,6 +482,8 @@ namespace D3D11On12
         PresentExtension m_PresentExt = { this };
         std::mutex m_SwapChainManagerMutex;
         std::shared_ptr<D3D12TranslationLayer::SwapChainManager> m_SwapChainManager;
+        //This should be cleared before each use. we're just saving the allocation
+        std::vector<D3D12TranslationLayer::PresentSurface> m_d3d12tlPresentSurfaces;
 
         struct SyncTokenExtensionData
         {
