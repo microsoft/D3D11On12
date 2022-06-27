@@ -216,7 +216,7 @@ namespace D3D11On12
         m_pPresentArgs = nullptr;
         D3D12TranslationLayer::ImmediateContext& immCtx = GetImmediateContextNoFlush();
         HRESULT hr = E_FAIL;
-        if (GetAdapter()->m_Callbacks.Present11On12CB)
+        if (GetAdapter()->m_bSupportsNewPresentPath)
         {
             // There's a rather convoluted sequence of events here. Call order is as follows:
             // 1. D3D12TranslationLayer::ImmediateContext::Present

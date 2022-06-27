@@ -26,6 +26,7 @@ namespace D3D11On12
             Args.bSupportDisplayableTextures : false)
         , m_bSupportDeferredContexts(Args.D3D11On12InterfaceVersion >= 5 ?
             Args.bSupportDeferredContexts : true)
+        , m_bSupportsNewPresentPath(Args.D3D11On12InterfaceVersion >=6 ? Args.Callbacks.Present11On12CB != nullptr : false)
     {
         static const D3D10_2DDI_ADAPTERFUNCS AdapterFuncs = {
             CalcPrivateDeviceSize,
