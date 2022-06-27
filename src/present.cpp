@@ -218,12 +218,16 @@ namespace D3D11On12
         HRESULT hr = E_FAIL;
         if (GetAdapter()->m_bSupportsNewPresentPath)
         {
-            // There's a rather convoluted sequence of events here. Call order is as follows:
+            // There's a rather convoluted sequence of events here. Flow of exectuion is as follows:
             // 1. D3D12TranslationLayer::ImmediateContext::Present
             // 2. D3D11On12 forwardToPresent11On12CB lambda (few lines below here)
             // 3. D3D11::Present11On12CB
             // 4. D3D11on12::Device::CloseAndSubmitGraphicsCommandListForPresent
             // 6. D3D12TranslationLayer::ImediateContext::CloseAndSubmitGraphicsCommandListForPresent
+            // 7. (return back to D3D11)
+            // 8. D3D11On12::BeginSplitExecuteCommandQueueCommand
+            // 9. D3D11 executes command
+            // 10. D3D11On12::EndSplitExecuteCommandQueueCommand
             // We also need to do some conversion between 11on12 and translationlayer resource types between boundaries
             try
             {
@@ -325,6 +329,37 @@ namespace D3D11On12
         ret = immCtx.m_MaxFrameLatencyHelper.IsMaximumFrameLatencyReached();
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
         return ret;
+    }
+
+    STDMETHODIMP_(HRESULT __stdcall) Device::CloseAndSubmitGraphicsCommandListForPresent(BOOL commandsAdded,
+        _In_reads_(numSrcSurfaces) const PresentSurface* pSrcSurfaces,
+        UINT numSrcSurfaces,
+        _In_opt_ ID3D11On12DDIResource* pDest,
+        _In_ D3DKMT_PRESENT* pKMTPresent)
+    {
+        D3D11on12_DDI_ENTRYPOINT_START();
+        D3D12TranslationLayer::ImmediateContext& immediateContext = GetImmediateContextNoFlush();
+        m_d3d12tlPresentSurfaces.clear();
+        for (UINT i = 0; i < numSrcSurfaces; i++)
+        {
+            auto presentSurface = pSrcSurfaces[i];
+            auto resource = static_cast<Resource*>(presentSurface.m_pResource);
+            D3D12TranslationLayer::PresentSurface surface = D3D12TranslationLayer::PresentSurface(resource->ImmediateResource(), presentSurface.m_subresource);
+            m_d3d12tlPresentSurfaces.push_back(surface);
+        }
+
+        D3D12TranslationLayer::Resource* pD3d12tlDestResource = nullptr;
+        if (pDest)
+        {
+            pD3d12tlDestResource = static_cast<Resource*>(pDest)->ImmediateResource();
+        }
+        HRESULT hr = immediateContext.CloseAndSubmitGraphicsCommandListForPresent(
+            commandsAdded,
+            m_d3d12tlPresentSurfaces.data(),
+            numSrcSurfaces,
+            pD3d12tlDestResource,
+            pKMTPresent);
+        D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 
     void Device::AcquireResource(D3D10DDI_HDEVICE hDevice, D3D10DDI_HRESOURCE, HANDLE hSyncToken) noexcept

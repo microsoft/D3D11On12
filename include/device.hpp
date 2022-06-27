@@ -294,7 +294,7 @@ namespace D3D11On12
         STDMETHOD(Present)(_In_ D3DKMT_PRESENT* pArgs) noexcept override;
         STDMETHOD_(void, SetMaximumFrameLatency)(UINT MaxFrameLatency) noexcept override;
         STDMETHOD_(bool, IsMaximumFrameLatencyReached)() noexcept override;
-        STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL commandsAdded, _In_reads_(numSrcSurfaces) const PresentSurface* pSrcSurfaces, UINT numSrcSurfaces, _In_opt_ ID3D11On12DDIResource* pDest, _In_ D3DKMT_PRESENT* pKMTPresent) { return E_NOTIMPL; }
+        STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL commandsAdded, _In_reads_(numSrcSurfaces) const PresentSurface* pSrcSurfaces, UINT numSrcSurfaces, _In_opt_ ID3D11On12DDIResource* pDest, _In_ D3DKMT_PRESENT* pKMTPresent) override;
         STDMETHOD(BeginSplitExecuteCommandQueueCommand)(CommandListType commandListType) override;
         STDMETHOD(EndSplitExecuteCommandQueueCommand)(CommandListType commandListType) override;
 
