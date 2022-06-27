@@ -26,6 +26,7 @@ namespace D3D11On12
             Args.bSupportDisplayableTextures : false)
         , m_bSupportDeferredContexts(Args.D3D11On12InterfaceVersion >= 5 ?
             Args.bSupportDeferredContexts : true)
+        , m_bSupportsNewPresentPath(Args.D3D11On12InterfaceVersion >=6 ? Args.Callbacks.Present11On12CB != nullptr : false)
     {
         static const D3D10_2DDI_ADAPTERFUNCS AdapterFuncs = {
             CalcPrivateDeviceSize,
@@ -90,6 +91,11 @@ namespace D3D11On12
         HRESULT hr = DXGI_STATUS_NO_REDIRECTION;
 
         auto pAdapter = CastFrom(hAdapter);
+        if (pAdapter->m_bSupportsNewPresentPath)
+        {
+            //New present path does support redirection
+            hr = S_OK;
+        }
         new (pArgs->hDrvDevice.pDrvPrivate) Device(pAdapter, pArgs); // throw( _com_error, bad_alloc )
 
         ThrowFailure(pAdapter->m_pUnderlyingDevice->QueryInterface(&pAdapter->m_pCompatDevice));

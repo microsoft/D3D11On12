@@ -294,6 +294,9 @@ namespace D3D11On12
         STDMETHOD(Present)(_In_ D3DKMT_PRESENT* pArgs) noexcept override;
         STDMETHOD_(void, SetMaximumFrameLatency)(UINT MaxFrameLatency) noexcept override;
         STDMETHOD_(bool, IsMaximumFrameLatencyReached)() noexcept override;
+        STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL commandsAdded, _In_reads_(numSrcSurfaces) const PresentSurface* pSrcSurfaces, UINT numSrcSurfaces, _In_opt_ ID3D11On12DDIResource* pDest, _In_ D3DKMT_PRESENT* pKMTPresent) override;
+        STDMETHOD(PreExecuteCommandQueueCommand)(CommandListType commandListType) override;
+        STDMETHOD(PostExecuteCommandQueueCommand)(CommandListType commandListType) override;
 
         // Resource wrapping helpers
         STDMETHOD_(UINT, GetResourcePrivateDataSize)() noexcept final { return D3D12TranslationLayer::SharedResourceHelpers::cPrivateResourceDriverDataSize; }
@@ -459,8 +462,16 @@ namespace D3D11On12
 
         struct PresentExtensionData
         {
-            Resource* pSrc;
+            UINT SrcSurfaceCount;
+            UINT FlipInterval;
+            Resource* pDest;
             void* pDXGIContext;
+            UINT VidPnSourceId;
+            PresentExtensionData(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs);
+            static size_t GetExtensionSize(DXGI1_6_1_DDI_ARG_PRESENT const* pArgs);
+            // Followed by PresentSurface[SrcSurfaceCount]
+            PresentSurface* GetPresentSurfaces() { return reinterpret_cast<PresentSurface*>(this + 1); }
+            PresentSurface const* GetPresentSurfaces() const { return reinterpret_cast<PresentSurface const*>(this + 1); }
         };
         PresentExtensionData const* m_pPresentArgs;
 
@@ -473,6 +484,8 @@ namespace D3D11On12
         PresentExtension m_PresentExt = { this };
         std::mutex m_SwapChainManagerMutex;
         std::shared_ptr<D3D12TranslationLayer::SwapChainManager> m_SwapChainManager;
+        //This should be cleared before each use. we're just saving the allocation
+        std::vector<D3D12TranslationLayer::PresentSurface> m_d3d12tlPresentSurfaces;
 
         struct SyncTokenExtensionData
         {
@@ -559,6 +572,9 @@ namespace D3D11On12
         STDMETHOD(Present)(D3DKMT_PRESENT*) noexcept final { return E_NOTIMPL; }
         STDMETHOD_(void, SetMaximumFrameLatency)(UINT) noexcept final { }
         STDMETHOD_(bool, IsMaximumFrameLatencyReached)() noexcept final { return false; }
+        STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL, _In_ const PresentSurface*, UINT, _In_opt_ ID3D11On12DDIResource*, _In_ D3DKMT_PRESENT*) final { return E_NOTIMPL; }
+        STDMETHOD(PreExecuteCommandQueueCommand)(CommandListType) final { return E_NOTIMPL; }
+        STDMETHOD(PostExecuteCommandQueueCommand)(CommandListType) final { return E_NOTIMPL; }
 
         // Resource wrapping helpers
         STDMETHOD_(UINT, GetResourcePrivateDataSize)() noexcept final { return UINT_MAX; }
