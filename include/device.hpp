@@ -295,6 +295,8 @@ namespace D3D11On12
         STDMETHOD_(void, SetMaximumFrameLatency)(UINT MaxFrameLatency) noexcept override;
         STDMETHOD_(bool, IsMaximumFrameLatencyReached)() noexcept override;
         STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL commandsAdded, _In_reads_(numSrcSurfaces) const PresentSurface* pSrcSurfaces, UINT numSrcSurfaces, _In_opt_ ID3D11On12DDIResource* pDest, _In_ D3DKMT_PRESENT* pKMTPresent) { return E_NOTIMPL; }
+        STDMETHOD(BeginSplitExecuteCommandQueueCommand)(CommandListType commandListType) override;
+        STDMETHOD(EndSplitExecuteCommandQueueCommand)(CommandListType commandListType) override;
 
         // Resource wrapping helpers
         STDMETHOD_(UINT, GetResourcePrivateDataSize)() noexcept final { return D3D12TranslationLayer::SharedResourceHelpers::cPrivateResourceDriverDataSize; }
@@ -571,6 +573,8 @@ namespace D3D11On12
         STDMETHOD_(void, SetMaximumFrameLatency)(UINT) noexcept final { }
         STDMETHOD_(bool, IsMaximumFrameLatencyReached)() noexcept final { return false; }
         STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL, _In_ const PresentSurface*, UINT, _In_opt_ ID3D11On12DDIResource*, _In_ D3DKMT_PRESENT*) final { return E_NOTIMPL; }
+        STDMETHOD(BeginSplitExecuteCommandQueueCommand)(CommandListType) final { return E_NOTIMPL; }
+        STDMETHOD(EndSplitExecuteCommandQueueCommand)(CommandListType) final { return E_NOTIMPL; }
 
         // Resource wrapping helpers
         STDMETHOD_(UINT, GetResourcePrivateDataSize)() noexcept final { return UINT_MAX; }

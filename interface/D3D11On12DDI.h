@@ -13,6 +13,15 @@ enum ResourceInfoType
     ResourceType
 };
 
+enum class CommandListType
+{
+    GRAPHICS = 0,
+    VIDEO_DECODE = 1,
+    VIDEO_PROCESS = 2,
+    MAX_VALID = 3,
+    UNKNOWN = MAX_VALID,
+};
+
 struct ResourceInfo
 {
     union
@@ -188,6 +197,8 @@ interface ID3D11On12DDIDevice
 
     // Entries beyond this point only valid when D3D11On12InterfaceVersion >= 6
     STDMETHOD(CloseAndSubmitGraphicsCommandListForPresent)(BOOL commandsAdded, _In_reads_(numSrcSurfaces) const D3D11On12::PresentSurface* pSrcSurfaces, UINT numSrcSurfaces, _In_opt_ ID3D11On12DDIResource* pDest, _In_ D3DKMT_PRESENT* pKMTPresent) = 0;
+    STDMETHOD(BeginSplitExecuteCommandQueueCommand)(D3D11On12::CommandListType) = 0;
+    STDMETHOD(EndSplitExecuteCommandQueueCommand)(D3D11On12::CommandListType) = 0;
 };
 
 extern "C" HRESULT WINAPI OpenAdapter_D3D11On12(_Inout_ D3D10DDIARG_OPENADAPTER* pArgs, _Inout_ D3D11On12::SOpenAdapterArgs* pArgs2);

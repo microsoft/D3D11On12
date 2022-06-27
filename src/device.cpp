@@ -1333,4 +1333,20 @@ namespace D3D11On12
         CLOSE_TRYCATCH_AND_STORE_HRESULT(S_OK);
         assert(SUCCEEDED(EntryPointHr));
     }
+
+    STDMETHODIMP_(HRESULT) Device::BeginSplitExecuteCommandQueueCommand(CommandListType commandListType)
+    {
+        D3D11on12_DDI_ENTRYPOINT_START();
+        auto clt = static_cast<D3D12TranslationLayer::COMMAND_LIST_TYPE>(commandListType);
+        HRESULT hr = GetImmediateContextNoFlush().GetCommandListManager(clt)->BeginSplitExecuteCommandQueueCommand();
+        D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
+    }
+
+    STDMETHODIMP_(HRESULT) Device::EndSplitExecuteCommandQueueCommand(CommandListType commandListType)
+    {
+        D3D11on12_DDI_ENTRYPOINT_START();
+        auto clt = static_cast<D3D12TranslationLayer::COMMAND_LIST_TYPE>(commandListType);
+        HRESULT hr = GetImmediateContextNoFlush().GetCommandListManager(clt)->EndSplitExecuteCommandQueueCommand();
+        D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
+    }
 };
