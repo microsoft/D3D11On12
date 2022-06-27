@@ -1334,19 +1334,19 @@ namespace D3D11On12
         assert(SUCCEEDED(EntryPointHr));
     }
 
-    STDMETHODIMP_(HRESULT) Device::BeginSplitExecuteCommandQueueCommand(CommandListType commandListType)
+    STDMETHODIMP_(HRESULT) Device::PreExecuteCommandQueueCommand(CommandListType commandListType)
     {
         D3D11on12_DDI_ENTRYPOINT_START();
         auto clt = static_cast<D3D12TranslationLayer::COMMAND_LIST_TYPE>(commandListType);
-        HRESULT hr = GetImmediateContextNoFlush().GetCommandListManager(clt)->BeginSplitExecuteCommandQueueCommand();
+        HRESULT hr = GetImmediateContextNoFlush().GetCommandListManager(clt)->PreExecuteCommandQueueCommand();
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 
-    STDMETHODIMP_(HRESULT) Device::EndSplitExecuteCommandQueueCommand(CommandListType commandListType)
+    STDMETHODIMP_(HRESULT) Device::PostExecuteCommandQueueCommand(CommandListType commandListType)
     {
         D3D11on12_DDI_ENTRYPOINT_START();
         auto clt = static_cast<D3D12TranslationLayer::COMMAND_LIST_TYPE>(commandListType);
-        HRESULT hr = GetImmediateContextNoFlush().GetCommandListManager(clt)->EndSplitExecuteCommandQueueCommand();
+        HRESULT hr = GetImmediateContextNoFlush().GetCommandListManager(clt)->PostExecuteCommandQueueCommand();
         D3D11on12_DDI_ENTRYPOINT_END_AND_RETURN_HR(hr);
     }
 };

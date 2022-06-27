@@ -225,9 +225,9 @@ namespace D3D11On12
             // 4. D3D11on12::Device::CloseAndSubmitGraphicsCommandListForPresent
             // 6. D3D12TranslationLayer::ImediateContext::CloseAndSubmitGraphicsCommandListForPresent
             // 7. (return back to D3D11)
-            // 8. D3D11On12::BeginSplitExecuteCommandQueueCommand
+            // 8. D3D11On12::PreExecuteCommandQueueCommand
             // 9. D3D11 executes command
-            // 10. D3D11On12::EndSplitExecuteCommandQueueCommand
+            // 10. D3D11On12::PostExecuteCommandQueueCommand
             // We also need to do some conversion between 11on12 and translationlayer resource types between boundaries
             try
             {
