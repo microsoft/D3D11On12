@@ -21,12 +21,13 @@ namespace D3D11On12
         , m_p3DCommandQueue(Args.p3DCommandQueue)
         , m_NodeIndex(Args.NodeIndex)
         , m_Callbacks(Args.Callbacks)
+        , m_Callbacks2(Args.D3D11On12InterfaceVersion >= 7 ? *Args.Callbacks2 : PrivateCallbacks2())
         , m_bAPIDisablesGPUTimeout(Args.bDisableGPUTimeout)
         , m_bSupportDisplayableTextures(Args.D3D11On12InterfaceVersion >= 5 ?
             Args.bSupportDisplayableTextures : false)
         , m_bSupportDeferredContexts(Args.D3D11On12InterfaceVersion >= 5 ?
             Args.bSupportDeferredContexts : true)
-        , m_bSupportsNewPresentPath(Args.D3D11On12InterfaceVersion >=6 ? Args.Callbacks.Present11On12CB != nullptr : false)
+        , m_bSupportsNewPresentPath(Args.D3D11On12InterfaceVersion >=7 ? Args.Callbacks2->Present11On12CB != nullptr : false)
     {
         static const D3D10_2DDI_ADAPTERFUNCS AdapterFuncs = {
             CalcPrivateDeviceSize,

@@ -70,10 +70,14 @@ struct PrivateCallbacks
 {
     D3D11_RESOURCE_FLAGS (CALLBACK *GetResourceFlags)(_In_ D3D10DDI_HRESOURCE, _Out_ bool *pbAcquireableOnWrite);
     bool (CALLBACK *NotifySharedResourceCreation)(_In_ HANDLE, _In_ IUnknown*);
-    HRESULT(CALLBACK *Present11On12CB)(_In_ HANDLE, _In_ Present11On12CBArgs*);
 };
 
-constexpr UINT c_CurrentD3D11On12InterfaceVersion = 6;
+struct PrivateCallbacks2
+{
+    HRESULT(CALLBACK* Present11On12CB)(_In_ HANDLE, _In_ Present11On12CBArgs*);
+};
+
+constexpr UINT c_CurrentD3D11On12InterfaceVersion = 7;
 
 struct SOpenAdapterArgs
 {
@@ -89,6 +93,8 @@ struct SOpenAdapterArgs
     bool bSupportDeferredContexts;
 
     UINT D3D11On12InterfaceVersion = c_CurrentD3D11On12InterfaceVersion;
+
+    PrivateCallbacks2* Callbacks2;
 };
 
 #define D3D11DDI_CREATEDEVICE_FLAG_IS_XBOX 0x80000000

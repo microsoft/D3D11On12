@@ -249,7 +249,7 @@ namespace D3D11On12
                     cbArgs.pGraphicsCommandQueue = args.pGraphicsCommandQueue;
                     cbArgs.pKMTPresent = args.pKMTPresent;
                     cbArgs.vidPnSourceId = args.vidPnSourceId;
-                    return (*adapter->m_Callbacks.Present11On12CB)(rtDeviceHandle, &cbArgs);
+                    return (*adapter->m_Callbacks2.Present11On12CB)(rtDeviceHandle, &cbArgs);
                 };
 
                 m_d3d12tlPresentSurfaces.clear();
