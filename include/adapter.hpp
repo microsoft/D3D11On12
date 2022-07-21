@@ -38,6 +38,7 @@ namespace D3D11On12
         bool m_bComputeOnly;
 
         PrivateCallbacks m_Callbacks;
+        PrivateCallbacks2 m_Callbacks2;
         const bool m_bAPIDisablesGPUTimeout;
         const bool m_bSupportDisplayableTextures;
         const bool m_bSupportDeferredContexts;
