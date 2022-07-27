@@ -95,6 +95,7 @@ struct SOpenAdapterArgs
     UINT D3D11On12InterfaceVersion = c_CurrentD3D11On12InterfaceVersion;
 
     PrivateCallbacks2* Callbacks2;
+    bool bSupportPrepatchedShaders;
 };
 
 #define D3D11DDI_CREATEDEVICE_FLAG_IS_XBOX 0x80000000

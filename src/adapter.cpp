@@ -16,7 +16,7 @@ HRESULT WINAPI OpenAdapter_D3D11On12(_Inout_ D3D10DDIARG_OPENADAPTER* pArgs, _In
 namespace D3D11On12
 {
     //----------------------------------------------------------------------------------------------------------------------------------
-    Adapter::Adapter(D3D10DDIARG_OPENADAPTER *pOpenAdapter, SOpenAdapterArgs& Args) noexcept(false)
+    Adapter::Adapter(D3D10DDIARG_OPENADAPTER* pOpenAdapter, SOpenAdapterArgs& Args) noexcept(false)
         : m_pUnderlyingDevice(Args.pDevice)
         , m_p3DCommandQueue(Args.p3DCommandQueue)
         , m_NodeIndex(Args.NodeIndex)
@@ -27,7 +27,8 @@ namespace D3D11On12
             Args.bSupportDisplayableTextures : false)
         , m_bSupportDeferredContexts(Args.D3D11On12InterfaceVersion >= 5 ?
             Args.bSupportDeferredContexts : true)
-        , m_bSupportsNewPresentPath(Args.D3D11On12InterfaceVersion >=7 ? Args.Callbacks2->Present11On12CB != nullptr : false)
+        , m_bSupportsNewPresentPath(Args.D3D11On12InterfaceVersion >= 7 ? Args.Callbacks2->Present11On12CB != nullptr : false)
+        , m_bSupportPrepatchedShaders(Args.D3D11On12InterfaceVersion >= 7 ? Args.bSupportPrepatchedShaders : false)
     {
         static const D3D10_2DDI_ADAPTERFUNCS AdapterFuncs = {
             CalcPrivateDeviceSize,
