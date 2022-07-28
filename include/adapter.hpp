@@ -43,6 +43,7 @@ namespace D3D11On12
         const bool m_bSupportDisplayableTextures;
         const bool m_bSupportDeferredContexts;
         const bool m_bSupportsNewPresentPath;
+        const bool m_bSupportPrepatchedShaders;
     };
 
 };
