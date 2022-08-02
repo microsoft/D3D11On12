@@ -434,7 +434,26 @@ namespace D3D11On12
         D3D11on12_DDI_ENTRYPOINT_START();
         auto pDevice = CastFrom(hDevice);
 
-        pDevice->GetBatchedContext().ResourceUpdateSubresourceUP(Resource::CastFromAndGetImmediateResource(hDst), DstSubresource, (D3D12_BOX*)pDstBox, pMem, SrcPitch, SrcDepth);
+        try
+        {
+            pDevice->GetBatchedContext().ResourceUpdateSubresourceUP(Resource::CastFromAndGetImmediateResource(hDst), DstSubresource, (D3D12_BOX*)pDstBox, pMem, SrcPitch, SrcDepth);
+        }
+        catch (_com_error& err)
+        {
+            if (err.Error() == E_OUTOFMEMORY)
+            {
+                //We ran out of memory and weren't able to free up enough to complete the operation.
+                //flush the batch to sync the worker thread so that we can be more aggressive in how we free up memory.
+                D3D12TranslationLayer::ImmediateContext& immCtx = pDevice->GetBatchedContext().FlushBatchAndGetImmediateContext();
+                immCtx.ResourceUpdateSubresourceUP(Resource::CastFromAndGetImmediateResource(hDst), DstSubresource, (D3D12_BOX*)pDstBox, pMem, SrcPitch, SrcDepth);
+            }
+            else
+            {
+                throw;
+            }
+            
+        }
+        
         D3D11on12_DDI_ENTRYPOINT_END_AND_REPORT_HR(hDevice, S_OK);
     }
 
