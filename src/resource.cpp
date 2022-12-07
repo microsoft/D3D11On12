@@ -137,10 +137,7 @@ namespace D3D11On12
             createArgs.m_heapDesc.Flags |= D3D12_HEAP_FLAG_ALLOW_DISPLAY;
         }
 
-        if (pDevice->GetImmediateContextNoFlush().IsResidencyManagementEnabled())
-        {
-            createArgs.m_heapDesc.Flags |= D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
-        }
+        createArgs.m_heapDesc.Flags |= D3D12_HEAP_FLAG_CREATE_NOT_RESIDENT;
 
         switch (pCreateResource->ResourceDimension)
         {
