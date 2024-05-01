@@ -209,7 +209,7 @@ namespace D3D11On12
         // API and DDI decls might be different sizes, because the DDI only allows gaps 4 components at a time
         // Walk the DDI decls, and increment the API decl when: 1. We have a non-gap, or
         // 2. When we've consumed all the DDI decls related to an API gap
-        UINT CurrentAPIDecl = 0, CurrentDDIDecl = 0;
+        size_t CurrentAPIDecl = 0, CurrentDDIDecl = 0;
         UINT CurrentGapOffset = 0;
         for (; CurrentAPIDecl < m_APISODecls.size() && CurrentDDIDecl < m_DDISODecls.size(); ++CurrentDDIDecl)
         {

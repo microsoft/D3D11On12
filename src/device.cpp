@@ -804,12 +804,12 @@ namespace D3D11On12
             GetBatchedContext().RenameAndMapBuffer(m_spInterfaceBuffers[eShaderType].get(), &Data);
 
             UINT* pDataUINTs = reinterpret_cast<UINT*>(Data.pData);
-            for (UINT i = 0; i < m_InterfaceInstances[eShaderType].size(); ++i)
+            for (size_t i = 0; i < m_InterfaceInstances[eShaderType].size(); ++i)
             {
                 *pDataUINTs = m_InterfaceInstances[eShaderType][i];
                 pDataUINTs += 4; // Legacy CB alignment issues
             }
-            for (UINT i = 0; i < m_InterfacePointerData[eShaderType].size(); ++i)
+            for (size_t i = 0; i < m_InterfacePointerData[eShaderType].size(); ++i)
             {
                 pDataUINTs[0] = m_InterfacePointerData[eShaderType][i].uCBID;
                 pDataUINTs[1] = m_InterfacePointerData[eShaderType][i].uCBOffset;
