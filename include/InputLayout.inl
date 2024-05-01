@@ -39,7 +39,7 @@ namespace D3D11On12
         UINT NumParameters = pVS->m_IOSemantics.m_InputSignature.GetParameters(&pParameters);
 
         // Find each input element's semantic by matching registers
-        for (UINT i = 0; i < m_APIElements.size(); ++i)
+        for (size_t i = 0; i < m_APIElements.size(); ++i)
         {
             UINT Register = m_Registers[i];
             auto iter = std::find_if(pParameters, pParameters + NumParameters,
