@@ -275,7 +275,7 @@ namespace D3D11On12
                             break;
 
                         case D3D12_TILED_RESOURCES_TIER_3: pCaps->TiledResourcesSupportFlags = D3DWDDM2_0DDI_TILED_RESOURCES_TIER_3_SUPPORTED; break;
-                        default: ASSUME(false);
+                        default: pCaps->TiledResourcesSupportFlags = D3DWDDM2_0DDI_TILED_RESOURCES_TIER_3_SUPPORTED; break; // Pass along tier 3 support for higher tier hardware
                     }
                 }
                 else
