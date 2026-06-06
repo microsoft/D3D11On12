@@ -1146,7 +1146,9 @@ namespace D3D11On12
             // Ensure that the resource is resident after the waits on the callers queue are satisfied.
             auto pResidencySet = std::make_unique<D3D12TranslationLayer::ResidencySet>();
 
-            pResidencySet->Open((UINT)D3D12TranslationLayer::COMMAND_LIST_TYPE::MAX_VALID);
+            // Transient set: lifetime is bounded to this call frame, so it cannot race with a destroyed
+            // Resource via ResidencyManager::EndTrackingObject. Pass nullptr to skip manager registration.
+            pResidencySet->Open((UINT)D3D12TranslationLayer::COMMAND_LIST_TYPE::MAX_VALID, nullptr);
             pResidencySet->Insert(pResidencyHandle);
             pResidencySet->Close();
             
