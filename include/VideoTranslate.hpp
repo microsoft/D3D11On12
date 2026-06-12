@@ -83,7 +83,7 @@ namespace D3D11On12
 
         static inline D3D12_VIDEO_DECODE_ARGUMENT_TYPE VideoDecodeArgumentType(D3D11_DDI_VIDEO_DECODER_BUFFER_TYPE Type11)
         {
-            static constexpr D3D12_VIDEO_DECODE_ARGUMENT_TYPE map[] =
+            static const D3D12_VIDEO_DECODE_ARGUMENT_TYPE map[] =
             {
                 (D3D12_VIDEO_DECODE_ARGUMENT_TYPE)-1,
                 D3D12_VIDEO_DECODE_ARGUMENT_TYPE_PICTURE_PARAMETERS,

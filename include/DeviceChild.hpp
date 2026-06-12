@@ -47,10 +47,10 @@ namespace D3D11On12
         destroy = InitializeDeferredHandle<TFunc>::Destroy;
     }
 
-    template <typename... TArgs>
-    struct InitializeDeferredHandle<void (APIENTRY*)(D3D10DDI_HDEVICE, const UINT*, D3D10DDI_HSHADER, D3D10DDI_HRTSHADER, TArgs...)>
+    template <typename TSignature, typename... TArgs>
+    struct InitializeDeferredHandle<void (APIENTRY*)(D3D10DDI_HDEVICE, const UINT*, D3D10DDI_HSHADER, D3D10DDI_HRTSHADER, TSignature, TArgs...)>
     {
-        static void Initialize(D3D10DDI_HDEVICE, const UINT*, D3D10DDI_HSHADER handle, D3D10DDI_HRTSHADER rtHandle, TArgs...)
+        static void Initialize(D3D10DDI_HDEVICE, const UINT*, D3D10DDI_HSHADER handle, D3D10DDI_HRTSHADER rtHandle, TSignature, TArgs...)
         {
             reinterpret_cast<DeviceChildDeferred<D3D10DDI_HSHADER>*>(handle.pDrvPrivate)->m_ImmediateHandle = D3D10DDI_HSHADER{ rtHandle.handle };
         }
