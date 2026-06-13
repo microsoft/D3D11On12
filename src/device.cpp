@@ -31,7 +31,7 @@ namespace D3D11On12
         if (APISupport1 & D3D12_FORMAT_SUPPORT1_VIDEO_PROCESSOR_INPUT) *pData |= D3D11_1DDI_FORMAT_SUPPORT_VIDEO_PROCESSOR_INPUT;
         if (APISupport1 & D3D12_FORMAT_SUPPORT1_IA_VERTEX_BUFFER) *pData |= D3D11_1DDI_FORMAT_SUPPORT_VERTEX_BUFFER;
         if (APISupport1 & D3D12_FORMAT_SUPPORT1_BUFFER) *pData |= D3D11_1DDI_FORMAT_SUPPORT_BUFFER;
-        constexpr D3D12_FORMAT_SUPPORT1 D3D12_FORMAT_SUPPORT1_CAPTURE = (D3D12_FORMAT_SUPPORT1)0x80000000;
+        const D3D12_FORMAT_SUPPORT1 D3D12_FORMAT_SUPPORT1_CAPTURE = (D3D12_FORMAT_SUPPORT1)0x80000000;
         if (APISupport1 & D3D12_FORMAT_SUPPORT1_CAPTURE) *pData |= D3D11_1DDI_FORMAT_SUPPORT_CAPTURE;
         if (APISupport1 & D3D12_FORMAT_SUPPORT1_SHADER_GATHER) *pData |= D3D11_1DDI_FORMAT_SUPPORT_SHADER_GATHER;
 
@@ -355,40 +355,40 @@ namespace D3D11On12
     template <typename TDevice>
     void DeviceBase::FillContextDDIs()
     {
-        m_pDDITable->pfnVsSetShader = TDevice::SetShader<D3D12TranslationLayer::e_VS>;
-        m_pDDITable->pfnPsSetShader = TDevice::SetShader<D3D12TranslationLayer::e_PS>;
-        m_pDDITable->pfnGsSetShader = TDevice::SetShader<D3D12TranslationLayer::e_GS>;
-        m_pDDITable->pfnHsSetShader = TDevice::SetShader<D3D12TranslationLayer::e_HS>;
-        m_pDDITable->pfnDsSetShader = TDevice::SetShader<D3D12TranslationLayer::e_DS>;
-        m_pDDITable->pfnCsSetShader = TDevice::SetShader<D3D12TranslationLayer::e_CS>;
+        m_pDDITable->pfnVsSetShader = TDevice::template SetShader<D3D12TranslationLayer::e_VS>;
+        m_pDDITable->pfnPsSetShader = TDevice::template SetShader<D3D12TranslationLayer::e_PS>;
+        m_pDDITable->pfnGsSetShader = TDevice::template SetShader<D3D12TranslationLayer::e_GS>;
+        m_pDDITable->pfnHsSetShader = TDevice::template SetShader<D3D12TranslationLayer::e_HS>;
+        m_pDDITable->pfnDsSetShader = TDevice::template SetShader<D3D12TranslationLayer::e_DS>;
+        m_pDDITable->pfnCsSetShader = TDevice::template SetShader<D3D12TranslationLayer::e_CS>;
 
-        m_pDDITable->pfnVsSetShaderWithIfaces = TDevice::SetShaderWithIfaces<D3D12TranslationLayer::e_VS>;
-        m_pDDITable->pfnPsSetShaderWithIfaces = TDevice::SetShaderWithIfaces<D3D12TranslationLayer::e_PS>;
-        m_pDDITable->pfnGsSetShaderWithIfaces = TDevice::SetShaderWithIfaces<D3D12TranslationLayer::e_GS>;
-        m_pDDITable->pfnHsSetShaderWithIfaces = TDevice::SetShaderWithIfaces<D3D12TranslationLayer::e_HS>;
-        m_pDDITable->pfnDsSetShaderWithIfaces = TDevice::SetShaderWithIfaces<D3D12TranslationLayer::e_DS>;
-        m_pDDITable->pfnCsSetShaderWithIfaces = TDevice::SetShaderWithIfaces<D3D12TranslationLayer::e_CS>;
+        m_pDDITable->pfnVsSetShaderWithIfaces = TDevice::template SetShaderWithIfaces<D3D12TranslationLayer::e_VS>;
+        m_pDDITable->pfnPsSetShaderWithIfaces = TDevice::template SetShaderWithIfaces<D3D12TranslationLayer::e_PS>;
+        m_pDDITable->pfnGsSetShaderWithIfaces = TDevice::template SetShaderWithIfaces<D3D12TranslationLayer::e_GS>;
+        m_pDDITable->pfnHsSetShaderWithIfaces = TDevice::template SetShaderWithIfaces<D3D12TranslationLayer::e_HS>;
+        m_pDDITable->pfnDsSetShaderWithIfaces = TDevice::template SetShaderWithIfaces<D3D12TranslationLayer::e_DS>;
+        m_pDDITable->pfnCsSetShaderWithIfaces = TDevice::template SetShaderWithIfaces<D3D12TranslationLayer::e_CS>;
 
-        m_pDDITable->pfnVsSetShaderResources = TDevice::SetShaderResources<D3D12TranslationLayer::e_VS>;
-        m_pDDITable->pfnPsSetShaderResources = TDevice::SetShaderResources<D3D12TranslationLayer::e_PS>;
-        m_pDDITable->pfnGsSetShaderResources = TDevice::SetShaderResources<D3D12TranslationLayer::e_GS>;
-        m_pDDITable->pfnHsSetShaderResources = TDevice::SetShaderResources<D3D12TranslationLayer::e_HS>;
-        m_pDDITable->pfnDsSetShaderResources = TDevice::SetShaderResources<D3D12TranslationLayer::e_DS>;
-        m_pDDITable->pfnCsSetShaderResources = TDevice::SetShaderResources<D3D12TranslationLayer::e_CS>;
+        m_pDDITable->pfnVsSetShaderResources = TDevice::template SetShaderResources<D3D12TranslationLayer::e_VS>;
+        m_pDDITable->pfnPsSetShaderResources = TDevice::template SetShaderResources<D3D12TranslationLayer::e_PS>;
+        m_pDDITable->pfnGsSetShaderResources = TDevice::template SetShaderResources<D3D12TranslationLayer::e_GS>;
+        m_pDDITable->pfnHsSetShaderResources = TDevice::template SetShaderResources<D3D12TranslationLayer::e_HS>;
+        m_pDDITable->pfnDsSetShaderResources = TDevice::template SetShaderResources<D3D12TranslationLayer::e_DS>;
+        m_pDDITable->pfnCsSetShaderResources = TDevice::template SetShaderResources<D3D12TranslationLayer::e_CS>;
 
-        m_pDDITable->pfnVsSetConstantBuffers = TDevice::SetConstantBuffers<D3D12TranslationLayer::e_VS>;
-        m_pDDITable->pfnPsSetConstantBuffers = TDevice::SetConstantBuffers<D3D12TranslationLayer::e_PS>;
-        m_pDDITable->pfnGsSetConstantBuffers = TDevice::SetConstantBuffers<D3D12TranslationLayer::e_GS>;
-        m_pDDITable->pfnHsSetConstantBuffers = TDevice::SetConstantBuffers<D3D12TranslationLayer::e_HS>;
-        m_pDDITable->pfnDsSetConstantBuffers = TDevice::SetConstantBuffers<D3D12TranslationLayer::e_DS>;
-        m_pDDITable->pfnCsSetConstantBuffers = TDevice::SetConstantBuffers<D3D12TranslationLayer::e_CS>;
+        m_pDDITable->pfnVsSetConstantBuffers = TDevice::template SetConstantBuffers<D3D12TranslationLayer::e_VS>;
+        m_pDDITable->pfnPsSetConstantBuffers = TDevice::template SetConstantBuffers<D3D12TranslationLayer::e_PS>;
+        m_pDDITable->pfnGsSetConstantBuffers = TDevice::template SetConstantBuffers<D3D12TranslationLayer::e_GS>;
+        m_pDDITable->pfnHsSetConstantBuffers = TDevice::template SetConstantBuffers<D3D12TranslationLayer::e_HS>;
+        m_pDDITable->pfnDsSetConstantBuffers = TDevice::template SetConstantBuffers<D3D12TranslationLayer::e_DS>;
+        m_pDDITable->pfnCsSetConstantBuffers = TDevice::template SetConstantBuffers<D3D12TranslationLayer::e_CS>;
 
-        m_pDDITable->pfnVsSetSamplers = TDevice::SetSamplers<D3D12TranslationLayer::e_VS>;
-        m_pDDITable->pfnPsSetSamplers = TDevice::SetSamplers<D3D12TranslationLayer::e_PS>;
-        m_pDDITable->pfnGsSetSamplers = TDevice::SetSamplers<D3D12TranslationLayer::e_GS>;
-        m_pDDITable->pfnHsSetSamplers = TDevice::SetSamplers<D3D12TranslationLayer::e_HS>;
-        m_pDDITable->pfnDsSetSamplers = TDevice::SetSamplers<D3D12TranslationLayer::e_DS>;
-        m_pDDITable->pfnCsSetSamplers = TDevice::SetSamplers<D3D12TranslationLayer::e_CS>;
+        m_pDDITable->pfnVsSetSamplers = TDevice::template SetSamplers<D3D12TranslationLayer::e_VS>;
+        m_pDDITable->pfnPsSetSamplers = TDevice::template SetSamplers<D3D12TranslationLayer::e_PS>;
+        m_pDDITable->pfnGsSetSamplers = TDevice::template SetSamplers<D3D12TranslationLayer::e_GS>;
+        m_pDDITable->pfnHsSetSamplers = TDevice::template SetSamplers<D3D12TranslationLayer::e_HS>;
+        m_pDDITable->pfnDsSetSamplers = TDevice::template SetSamplers<D3D12TranslationLayer::e_DS>;
+        m_pDDITable->pfnCsSetSamplers = TDevice::template SetSamplers<D3D12TranslationLayer::e_CS>;
 
         m_pDDITable->pfnDraw = TDevice::Draw;
         m_pDDITable->pfnDrawAuto = TDevice::DrawAuto;
