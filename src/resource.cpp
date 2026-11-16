@@ -506,6 +506,6 @@ namespace D3D11On12
     }
     STDMETHODIMP Resource::CreateSharedHandle(_In_opt_ const SECURITY_ATTRIBUTES *pAttributes, _In_ DWORD dwAccess, _In_opt_ LPCWSTR lpName, _Out_ HANDLE *pHandle) noexcept
     {
-        return m_parentDevice.GetImmediateContextNoFlush().m_pDevice12->CreateSharedHandle(GetUnderlyingResource(), pAttributes, dwAccess, lpName, pHandle);
+        return m_parentDevice.GetImmediateContextNoFlush().m_pDevice16->CreateSharedHandle(GetUnderlyingResource(), pAttributes, dwAccess, lpName, pHandle);
     }
 };
