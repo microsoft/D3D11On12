@@ -27,7 +27,7 @@ namespace D3D11On12
         static HRESULT APIENTRY GetCaps(_In_ D3D10DDI_HADAPTER hAdapter, _In_ const D3D10_2DDIARG_GETCAPS *pData);
 
     public:
-        CComPtr<ID3D12Device1> m_pUnderlyingDevice;
+        CComPtr<ID3D12Device16> m_pUnderlyingDevice;
         ID3D12CommandQueue* m_p3DCommandQueue;
         CComPtr<ID3D12CompatibilityDevice> m_pCompatDevice;
 

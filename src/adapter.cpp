@@ -17,8 +17,7 @@ namespace D3D11On12
 {
     //----------------------------------------------------------------------------------------------------------------------------------
     Adapter::Adapter(D3D10DDIARG_OPENADAPTER* pOpenAdapter, SOpenAdapterArgs& Args) noexcept(false)
-        : m_pUnderlyingDevice(Args.pDevice)
-        , m_p3DCommandQueue(Args.p3DCommandQueue)
+        : m_p3DCommandQueue(Args.p3DCommandQueue)
         , m_NodeIndex(Args.NodeIndex)
         , m_Callbacks(Args.Callbacks)
         , m_Callbacks2(Args.D3D11On12InterfaceVersion >= 7 ? *Args.Callbacks2 : PrivateCallbacks2())
@@ -42,16 +41,20 @@ namespace D3D11On12
     
         m_Architecture.NodeIndex = m_NodeIndex;
 
-        if (!m_pUnderlyingDevice)
+        if (Args.pDevice)
+        {
+            ThrowFailure(Args.pDevice->QueryInterface(&m_pUnderlyingDevice));
+        }
+        else
         {
             assert(Args.pAdapter != nullptr);
             ThrowFailure(D3D12CreateDevice(Args.pAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_pUnderlyingDevice)));
         }
     
-        HRESULT hr = m_pUnderlyingDevice->CheckFeatureSupport(D3D12_FEATURE_ARCHITECTURE1, &m_Architecture, sizeof(m_Architecture));
+        HRESULT hr = m_pUnderlyingDevice->CheckFeatureSupport1(D3D12_FEATURE_ARCHITECTURE1, &m_Architecture, sizeof(m_Architecture), D3D12_SDK_VERSION);
         assert(SUCCEEDED(hr));
     
-        hr = m_pUnderlyingDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS, &m_Caps, sizeof(m_Caps));
+        hr = m_pUnderlyingDevice->CheckFeatureSupport1(D3D12_FEATURE_D3D12_OPTIONS, &m_Caps, sizeof(m_Caps), D3D12_SDK_VERSION);
         assert(SUCCEEDED(hr));
 
         D3D_FEATURE_LEVEL FLList[] = {
@@ -69,12 +72,12 @@ namespace D3D11On12
         D3D12_FEATURE_DATA_FEATURE_LEVELS FLDesc = {};
         FLDesc.NumFeatureLevels = _countof(FLList);
         FLDesc.pFeatureLevelsRequested = FLList;
-        hr = m_pUnderlyingDevice->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS,&FLDesc,sizeof(FLDesc));
+        hr = m_pUnderlyingDevice->CheckFeatureSupport1(D3D12_FEATURE_FEATURE_LEVELS, &FLDesc, sizeof(FLDesc), D3D12_SDK_VERSION);
         assert(SUCCEEDED(hr));
         m_bComputeOnly = !!(FLDesc.MaxSupportedFeatureLevel == D3D_FEATURE_LEVEL_1_0_CORE);
 
         m_ShaderModelCaps.HighestShaderModel = D3D_SHADER_MODEL_6_2;
-        hr = m_pUnderlyingDevice->CheckFeatureSupport(D3D12_FEATURE_SHADER_MODEL, &m_ShaderModelCaps, sizeof(m_ShaderModelCaps));
+        hr = m_pUnderlyingDevice->CheckFeatureSupport1(D3D12_FEATURE_SHADER_MODEL, &m_ShaderModelCaps, sizeof(m_ShaderModelCaps), D3D12_SDK_VERSION);
         assert(SUCCEEDED(hr));
 
         Args.D3D11On12InterfaceVersion = std::max(Args.D3D11On12InterfaceVersion, c_CurrentD3D11On12InterfaceVersion);
@@ -158,8 +161,10 @@ namespace D3D11On12
                 FLQuery.NumFeatureLevels = _countof(UnderstoodFLs);
                 FLQuery.pFeatureLevelsRequested = UnderstoodFLs;
                 FLQuery.MaxSupportedFeatureLevel = D3D_FEATURE_LEVEL_12_1;
-                if (FAILED(pThis->m_pUnderlyingDevice->CheckFeatureSupport(D3D12_FEATURE_FEATURE_LEVELS, &FLQuery, sizeof(FLQuery))))
+                if (FAILED(pThis->m_pUnderlyingDevice->CheckFeatureSupport1(D3D12_FEATURE_FEATURE_LEVELS, &FLQuery, sizeof(FLQuery), D3D12_SDK_VERSION)))
+                {
                     return E_INVALIDARG;
+                }
 
                 // VSO 12194692: AMD is not able to support multi-channel min-max filtering without static samplers.
                 // This is required in D3D11 tiled resources tier 2, which is required for FL12.
@@ -261,10 +266,11 @@ namespace D3D11On12
                             // Hardware that supports SRV-Only Tiled Resource Tier 3 needs to support Tier 2, to validate behavior well.
                             pCaps->TiledResourcesSupportFlags
                                 = ( SUCCEEDED
-                                        ( pThis->m_pUnderlyingDevice->CheckFeatureSupport
+                                        ( pThis->m_pUnderlyingDevice->CheckFeatureSupport1
                                             ( D3D12_FEATURE_D3D12_OPTIONS5
                                             , &D3D12Options5
                                             , sizeof(D3D12Options5)
+                                            , D3D12_SDK_VERSION
                                             )
                                         )
                                     && D3D12Options5.SRVOnlyTiledResourceTier3
@@ -356,8 +362,8 @@ namespace D3D11On12
             case D3D10_2DDICAPS_TYPE::D3DWDDM2_0DDICAPS_GPUVA_CAPS:
             {
                 D3D12_FEATURE_DATA_GPU_VIRTUAL_ADDRESS_SUPPORT Support;
-                if (FAILED(pThis->m_pUnderlyingDevice->CheckFeatureSupport(
-                    D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &Support, sizeof(Support))))
+                if (FAILED(pThis->m_pUnderlyingDevice->CheckFeatureSupport1(
+                    D3D12_FEATURE_GPU_VIRTUAL_ADDRESS_SUPPORT, &Support, sizeof(Support), D3D12_SDK_VERSION)))
                 {
                     return E_INVALIDARG; // Mismatched binaries
                 }
