@@ -24,7 +24,7 @@ namespace D3D11On12
         // ID3D11On12DDIFence
         STDMETHOD(CreateSharedHandle)(_In_opt_ const SECURITY_ATTRIBUTES *pAttributes, _In_ DWORD dwAccess, _In_opt_ LPCWSTR lpName, _Out_ HANDLE *pHandle) noexcept final
         {
-            return m_parentDevice.GetImmediateContextNoFlush().m_pDevice12->CreateSharedHandle(m_pUnderlyingFence->Get(), pAttributes, dwAccess, lpName, pHandle);
+            return m_parentDevice.GetImmediateContextNoFlush().m_pDevice16->CreateSharedHandle(m_pUnderlyingFence->Get(), pAttributes, dwAccess, lpName, pHandle);
         }
         STDMETHOD(SetEventOnCompletion)(UINT64 Value, _In_ HANDLE hEvent) noexcept final
         {
